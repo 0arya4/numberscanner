@@ -10,7 +10,7 @@
     *{margin:0;padding:0;box-sizing:border-box;-webkit-tap-highlight-color:transparent}
 
     body{
-      background:#06060f;color:#fff;
+      background:#080812;color:#fff;
       font-family:'Inter',sans-serif;
       height:100dvh;display:flex;flex-direction:column;align-items:center;overflow:hidden
     }
@@ -26,12 +26,12 @@
     #header h1{
       font-size:.72rem;font-weight:700;letter-spacing:3.5px;
       text-transform:uppercase;
-      color:#f59e0b
+      color:#60a5fa
     }
     #badge{
       font-size:.55rem;padding:3px 9px;border-radius:20px;
-      background:rgba(245,158,11,.1);border:1px solid rgba(245,158,11,.2);
-      color:#f59e0b;letter-spacing:1px;font-weight:600
+      background:rgba(96,165,250,.1);border:1px solid rgba(96,165,250,.25);
+      color:#60a5fa;letter-spacing:1px;font-weight:600
     }
 
     /* ── camera wrap ── */
@@ -42,7 +42,7 @@
     #box{
       position:absolute;pointer-events:none;
       border-radius:10px;
-      border:2px solid rgba(245,158,11,.6);
+      border:2px solid rgba(96,165,250,.6);
       box-shadow:0 0 0 9999px rgba(0,0,0,.6);
       transition:border-color .2s,box-shadow .2s
     }
@@ -61,9 +61,9 @@
     /* scan sweep */
     #line{
       position:absolute;left:6px;right:6px;height:2px;
-      background:linear-gradient(90deg,transparent,#f59e0b,transparent);
+      background:linear-gradient(90deg,transparent,#60a5fa,transparent);
       filter:blur(.6px);
-      animation:sweep 1s ease-in-out infinite
+      animation:sweep 1.2s ease-in-out infinite
     }
     #box.hit #line{background:linear-gradient(90deg,transparent,#22c55e,transparent)}
     @keyframes sweep{
@@ -73,7 +73,7 @@
     /* status pill */
     #status-pill{
       position:absolute;bottom:12px;left:50%;transform:translateX(-50%);
-      background:rgba(6,6,15,.8);backdrop-filter:blur(10px);
+      background:rgba(8,8,18,.85);backdrop-filter:blur(10px);
       border:1px solid rgba(255,255,255,.08);border-radius:20px;
       font-size:.68rem;letter-spacing:1px;color:#64748b;
       padding:5px 16px;white-space:nowrap;pointer-events:none;
@@ -84,14 +84,14 @@
       border-color:rgba(34,197,94,.35);color:#22c55e
     }
     #status-pill.partial-pill{
-      background:rgba(245,158,11,.1);
-      border-color:rgba(245,158,11,.3);color:#f59e0b
+      background:rgba(96,165,250,.1);
+      border-color:rgba(96,165,250,.3);color:#60a5fa
     }
 
     /* ── bottom panel ── */
     #panel{
       width:100%;max-width:540px;
-      background:#0a0a14;
+      background:#0c0c1a;
       border-top:1px solid rgba(255,255,255,.05);
       padding:14px 16px 18px;display:flex;flex-direction:column;gap:10px
     }
@@ -101,7 +101,7 @@
       background:rgba(255,255,255,.03);
       border:1px solid rgba(255,255,255,.06);
       border-radius:14px;padding:13px 14px;
-      display:flex;align-items:center;gap:10px;
+      display:flex;align-items:center;gap:8px;
       transition:border-color .2s,background .2s
     }
     #num-card.active{
@@ -109,40 +109,54 @@
       border-color:rgba(34,197,94,.2)
     }
     #num-card.partial-card{
-      background:rgba(245,158,11,.04);
-      border-color:rgba(245,158,11,.2)
+      background:rgba(96,165,250,.04);
+      border-color:rgba(96,165,250,.2)
     }
     #result{
       flex:1;font-family:'JetBrains Mono',monospace;
-      font-size:1.5rem;font-weight:800;letter-spacing:2px;
-      color:#f59e0b;
+      font-size:1.45rem;font-weight:800;letter-spacing:2px;
+      color:#60a5fa;
       min-height:1.8rem;transition:color .2s
     }
     #result.empty{color:#1e1e30;font-size:.95rem;letter-spacing:0;font-weight:400;font-family:'Inter',sans-serif}
     #result.full{color:#22c55e}
-    #result.partial{color:#f59e0b}
+    #result.partial{color:#93c5fd}
+
+    /* button group */
+    #btn-group{display:flex;gap:7px;flex-shrink:0}
 
     /* copy btn */
     #copy-btn{
-      background:rgba(245,158,11,.12);
-      border:1px solid rgba(245,158,11,.25);
-      color:#f59e0b;padding:9px 18px;
+      background:rgba(96,165,250,.12);
+      border:1px solid rgba(96,165,250,.28);
+      color:#60a5fa;padding:9px 16px;
       border-radius:9px;font-size:.78rem;font-weight:700;
       cursor:pointer;transition:background .15s,transform .1s;
       white-space:nowrap
     }
-    #copy-btn:active{background:rgba(245,158,11,.3);transform:scale(.96)}
+    #copy-btn:active{background:rgba(96,165,250,.3);transform:scale(.96)}
     #copy-btn.done{background:rgba(34,197,94,.15);border-color:rgba(34,197,94,.3);color:#22c55e}
+
+    /* clear btn */
+    #clear-btn{
+      background:rgba(255,255,255,.05);
+      border:1px solid rgba(255,255,255,.1);
+      color:#475569;padding:9px 14px;
+      border-radius:9px;font-size:.78rem;font-weight:700;
+      cursor:pointer;transition:background .15s,transform .1s;
+      white-space:nowrap
+    }
+    #clear-btn:active{background:rgba(255,255,255,.1);transform:scale(.96)}
 
     /* call button */
     #call-btn{
       display:flex;align-items:center;justify-content:center;gap:9px;
       width:100%;padding:16px;
-      background:linear-gradient(135deg,#15803d,#22c55e);
+      background:linear-gradient(135deg,#1d4ed8,#3b82f6);
       color:#fff;font-weight:700;font-size:1.05rem;
       border:none;border-radius:13px;cursor:pointer;
       text-align:center;text-decoration:none;letter-spacing:.4px;
-      box-shadow:0 4px 24px rgba(34,197,94,.22);
+      box-shadow:0 4px 24px rgba(59,130,246,.25);
       transition:opacity .2s,transform .1s
     }
     #call-btn:active{transform:scale(.98);opacity:.88}
@@ -159,8 +173,8 @@
 
 <div id="header">
   <div id="header-left">
-    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#f59e0b" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
-      <rect x="2" y="3" width="20" height="14" rx="2"/><path d="M8 21h8M12 17v4"/>
+    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#60a5fa" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+      <path d="M3 9l9-7 9 7v11a2 2 0 01-2 2H5a2 2 0 01-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/>
     </svg>
     <h1>Iraqi Scanner</h1>
   </div>
@@ -180,7 +194,10 @@
 <div id="panel">
   <div id="num-card">
     <div id="result" class="empty">point at a number…</div>
-    <button id="copy-btn" onclick="copyNum()">Copy</button>
+    <div id="btn-group">
+      <button id="copy-btn" onclick="copyNum()">Copy</button>
+      <button id="clear-btn" onclick="clearNum()">Clear</button>
+    </div>
   </div>
   <a id="call-btn" class="off" href="#">
     <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
@@ -195,12 +212,10 @@
 <script>
 // ── number matching ──────────────────────────────────────────
 function findNumber(text) {
-  // strip everything except digits
-  const d = text.replace(/[^0-9]/g, '');
-  // full Iraqi number: 11 digits starting with 07
+  // remove spaces/dashes/dots between digits (handles "077 043 363 30" style)
+  const d = text.replace(/(\d)[\s\-\.]+(\d)/g, '$1$2').replace(/[^0-9]/g, '');
   let m = d.match(/07\d{9}/);
   if (m) return { num: m[0], full: true };
-  // partial: at least 07 + 6 more digits → show as preview
   m = d.match(/07\d{6,8}/);
   if (m) return { num: m[0], full: false };
   return null;
@@ -249,11 +264,10 @@ async function startCamera() {
 
 // ── engine init ──────────────────────────────────────────────
 async function initEngine() {
-  // Try native TextDetector first (Chrome Android — instant ML Kit)
   if ('TextDetector' in window) {
     try {
       nativeDetector = new TextDetector();
-      await nativeDetector.detect(video);  // smoke test
+      await nativeDetector.detect(video);
       useNative = true;
       badge.textContent = '⚡ INSTANT';
       status.textContent = 'Point at number';
@@ -262,15 +276,14 @@ async function initEngine() {
     } catch(e) { console.warn('TextDetector failed:', e); }
   }
 
-  // Fallback: Tesseract.js (optimised for speed)
   badge.textContent = 'LOADING…';
   status.textContent = 'Loading OCR…';
   tessWorker = await Tesseract.createWorker('eng', 1, { logger: ()=>{} });
   await tessWorker.setParameters({
     tessedit_char_whitelist: '0123456789',
-    tessedit_pageseg_mode: '7',          // single-line — fastest mode
+    tessedit_pageseg_mode: '7',
   });
-  badge.textContent = 'TESSERACT';
+  badge.textContent = 'OCR READY';
   status.textContent = 'Point at number';
   ready = true;
 }
@@ -288,23 +301,6 @@ function getCropRect() {
   return { x: sx + (sw - bw) / 2, y: sy + (sh - bh) / 2, w: bw, h: bh };
 }
 
-// ── preprocess for Tesseract (auto dark/light bg) ────────────
-function preprocess(sw, sh) {
-  const id = ctx.getImageData(0, 0, sw, sh);
-  const d  = id.data;
-  let sum = 0;
-  for (let i = 0; i < d.length; i += 4)
-    sum += 0.299 * d[i] + 0.587 * d[i+1] + 0.114 * d[i+2];
-  const avg  = sum / (d.length / 4);
-  const dark = avg < 128;
-  for (let i = 0; i < d.length; i += 4) {
-    const g = 0.299 * d[i] + 0.587 * d[i+1] + 0.114 * d[i+2];
-    const out = dark ? (g > avg ? 0 : 255) : (g < avg ? 0 : 255);
-    d[i] = d[i+1] = d[i+2] = out; d[i+3] = 255;
-  }
-  ctx.putImageData(id, 0, 0);
-}
-
 // ── native scan ──────────────────────────────────────────────
 async function scanNative() {
   const detections = await nativeDetector.detect(video);
@@ -312,15 +308,31 @@ async function scanNative() {
   return findNumber(allText);
 }
 
-// ── tesseract scan ───────────────────────────────────────────
+// ── tesseract scan (GPU-accelerated preprocessing) ───────────
 async function scanTess() {
   const r = getCropRect();
   if (!r) return null;
-  const SCALE = 2;                               // 2x — faster than 4x
+  const SCALE = 3;
   const sw = Math.round(r.w * SCALE), sh = Math.round(r.h * SCALE);
   canvas.width = sw; canvas.height = sh;
+
+  // Quick avg brightness sample (downsample 4x for speed)
+  const sx2 = sw >> 2, sy2 = sh >> 2;
+  ctx.filter = 'none';
+  ctx.drawImage(video, r.x, r.y, r.w, r.h, 0, 0, sx2, sy2);
+  const sample = ctx.getImageData(0, 0, sx2, sy2).data;
+  let sum = 0;
+  for (let i = 0; i < sample.length; i += 4)
+    sum += 0.299 * sample[i] + 0.587 * sample[i+1] + 0.114 * sample[i+2];
+  const dark = (sum / (sample.length / 4)) < 118;
+
+  // GPU-accelerated contrast + optional invert
+  ctx.filter = dark
+    ? 'grayscale(1) contrast(6) invert(1)'
+    : 'grayscale(1) contrast(6)';
   ctx.drawImage(video, r.x, r.y, r.w, r.h, 0, 0, sw, sh);
-  preprocess(sw, sh);
+  ctx.filter = 'none';
+
   const { data: { text } } = await tessWorker.recognize(canvas);
   return findNumber(text);
 }
@@ -335,8 +347,6 @@ function applyResult(found) {
   }
 
   const { num, full } = found;
-
-  // always update display immediately
   result.textContent = num;
   result.classList.remove('empty', 'full', 'partial');
   numCard.classList.remove('active', 'partial-card');
@@ -346,14 +356,12 @@ function applyResult(found) {
     numCard.classList.add('active');
     box.className = 'hit';
     status.className = 'hit-pill';
-    status.textContent = '✓ Copied!';
+    status.textContent = '✓ Got it!';
 
-    // update call button
     callBtn.href = 'tel:' + num;
     callBtn.innerHTML = `<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M22 16.92v3a2 2 0 01-2.18 2 19.79 19.79 0 01-8.63-3.07A19.5 19.5 0 013.07 10.8 19.79 19.79 0 01.1 2.18 2 2 0 012.08 0h3a2 2 0 012 1.72c.127.96.361 1.903.7 2.81a2 2 0 01-.45 2.11L6.09 7.91a16 16 0 006 6l1.27-1.27a2 2 0 012.11-.45c.907.339 1.85.573 2.81.7A2 2 0 0122 16.92z"/></svg> Call ${num}`;
     callBtn.classList.remove('off');
 
-    // auto-copy
     if (num !== lastFull) {
       lastFull = num;
       navigator.clipboard.writeText(num).catch(() => {});
@@ -361,7 +369,6 @@ function applyResult(found) {
       flashCopy();
     }
   } else {
-    // partial – show amber preview, no call button yet
     result.classList.add('partial');
     numCard.classList.add('partial-card');
     box.className = '';
@@ -373,20 +380,31 @@ function applyResult(found) {
 function flashCopy() {
   copyBtn.textContent = '✓ Copied';
   copyBtn.classList.add('done');
-  setTimeout(() => {
-    copyBtn.textContent = 'Copy';
-    copyBtn.classList.remove('done');
-  }, 1500);
+  setTimeout(() => { copyBtn.textContent = 'Copy'; copyBtn.classList.remove('done'); }, 1500);
 }
 
-// ── manual copy ──────────────────────────────────────────────
 function copyNum() {
   const num = result.textContent;
   if (!num || result.classList.contains('empty')) return;
   navigator.clipboard.writeText(num).then(() => flashCopy()).catch(() => {});
 }
 
-// ── main loop ────────────────────────────────────────────────
+function clearNum() {
+  lastFull = '';
+  result.textContent = 'point at a number…';
+  result.className = 'empty';
+  numCard.className = '';
+  box.className = '';
+  status.className = '';
+  status.textContent = 'Scanning…';
+  callBtn.href = '#';
+  callBtn.innerHTML = `<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M22 16.92v3a2 2 0 01-2.18 2 19.79 19.79 0 01-8.63-3.07A19.5 19.5 0 013.07 10.8 19.79 19.79 0 01.1 2.18 2 2 0 012.08 0h3a2 2 0 012 1.72c.127.96.361 1.903.7 2.81a2 2 0 01-.45 2.11L6.09 7.91a16 16 0 006 6l1.27-1.27a2 2 0 012.11-.45c.907.339 1.85.573 2.81.7A2 2 0 0122 16.92z"/></svg> Call`;
+  callBtn.classList.add('off');
+  copyBtn.textContent = 'Copy';
+  copyBtn.classList.remove('done');
+}
+
+// ── main loop (0.5 s cadence) ────────────────────────────────
 async function loop() {
   if (looping || !ready) return;
   looping = true;
@@ -394,12 +412,10 @@ async function loop() {
     const found = useNative ? await scanNative() : await scanTess();
     applyResult(found);
   } catch(e) {
-    status.textContent = 'Err: ' + e.message;
     console.error(e);
   }
   looping = false;
-  // native ≈ instant → 150 ms;  tesseract → 300 ms
-  setTimeout(loop, useNative ? 150 : 300);
+  setTimeout(loop, useNative ? 200 : 500);
 }
 
 // ── boot ─────────────────────────────────────────────────────
