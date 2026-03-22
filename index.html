@@ -295,7 +295,7 @@ let cssScale = 2;
 let srEnabled = true;
 
 // ── scan-box layout ──────────────────────────────────────────
-const BW = 0.90, BH = 0.19;
+const BW = 0.95, BH = 0.19;
 function posBox() {
   const ew = video.offsetWidth, eh = video.offsetHeight;
   const bw = ew * BW, bh = eh * BH, bx = (ew - bw) / 2, by = (eh - bh) / 2;
@@ -416,53 +416,72 @@ async function scanNative() {
   return findNumber(allText);
 }
 
-// ── tesseract scan + AI-SR ───────────────────────────────────
+// ── tesseract scan + AI-SR multi-pass ───────────────────────
+// Tries up to 4 different blur/contrast combos and stops the
+// moment a full 11-digit Iraqi number is confirmed.
+// Worst-case ~2-3 s on bad quality; good quality exits in 1 pass.
 async function scanTess() {
   const r = getCropRect();
   if (!r) return null;
 
-  // Adaptive scale: go higher for low-res cameras (more pixels = better OCR)
   const camPx = video.videoWidth * video.videoHeight;
   const isLowRes = camPx < 1280 * 720;
   const SCALE = isLowRes ? 5 : 4;
-
   const sw = Math.round(r.w * SCALE), sh = Math.round(r.h * SCALE);
 
-  // Quick brightness sample
-  ctx2.filter = 'none';
+  // ── brightness sample ────────────────────────────────────
   canvas2.width = 80; canvas2.height = 20;
+  ctx2.filter = 'none';
   ctx2.drawImage(video, r.x, r.y, r.w, r.h, 0, 0, 80, 20);
   const sample = ctx2.getImageData(0, 0, 80, 20).data;
-  let sum = 0;
+  let bSum = 0;
   for (let i = 0; i < sample.length; i += 4)
-    sum += 0.299 * sample[i] + 0.587 * sample[i+1] + 0.114 * sample[i+2];
-  const dark = (sum / 1600) < 118;
+    bSum += 0.299*sample[i] + 0.587*sample[i+1] + 0.114*sample[i+2];
+  const dark = (bSum / 1600) < 118;
 
-  // ── Multi-step upscaling (2× then 2×) for better quality ──
-  // Step 1: draw at half target size with light contrast
-  const mw = Math.round(sw / 2), mh = Math.round(sh / 2);
-  canvas2.width = mw; canvas2.height = mh;
-  ctx2.filter = 'grayscale(1) contrast(2)';
-  ctx2.drawImage(video, r.x, r.y, r.w, r.h, 0, 0, mw, mh);
-  ctx2.filter = 'none';
-
-  // Step 2: draw to final canvas at 2× again with heavy contrast + invert if dark
-  canvas.width = sw; canvas.height = sh;
-  ctx.filter = dark ? 'contrast(5) invert(1)' : 'contrast(5)';
-  ctx.drawImage(canvas2, 0, 0, sw, sh);
-  ctx.filter = 'none';
-
-  // ── AI Super-Resolution: unsharp mask sharpening ───────────
-  // Recovers edge detail lost in upscaling — crucial for blurry/low-res sources.
-  // Skip on huge canvases (> 2M px) to keep it fast.
-  if (srEnabled && sw * sh < 2000000) {
-    status.className = 'sr-pill';
-    status.textContent = 'AI enhancing…';
-    applyUnsharpMask(ctx, sw, sh);
+  // ── render one attempt to `canvas` ──────────────────────
+  function render(blurPx, contrast, inv) {
+    const mw = Math.round(r.w * 2), mh = Math.round(r.h * 2);
+    canvas2.width = mw; canvas2.height = mh;
+    // Step 1 – 2× + blur: kills moire / screen scanlines
+    ctx2.filter = `grayscale(1) blur(${blurPx}px)`;
+    ctx2.drawImage(video, r.x, r.y, r.w, r.h, 0, 0, mw, mh);
+    ctx2.filter = 'none';
+    // Step 2 – 2× more + heavy contrast
+    canvas.width = sw; canvas.height = sh;
+    ctx.filter = `contrast(${contrast})${inv ? ' invert(1)' : ''}`;
+    ctx.drawImage(canvas2, 0, 0, sw, sh);
+    ctx.filter = 'none';
+    // Step 3 – AI unsharp mask: recovers edges blurred by upscale
+    if (srEnabled && sw * sh < 2600000) applyUnsharpMask(ctx, sw, sh);
   }
 
-  const { data: { text } } = await tessWorker.recognize(canvas);
-  return findNumber(text);
+  // ── pass schedule ────────────────────────────────────────
+  // [blurPx, contrast, invert]
+  // Different blur strengths hit different moire frequencies;
+  // opposite polarity catches misdetected bg brightness.
+  const passes = [
+    [0.9, 7,  dark ],   // 1 – light blur, max contrast  (fast path)
+    [1.5, 5,  dark ],   // 2 – medium blur kills more moire
+    [0.9, 7, !dark ],   // 3 – opposite polarity
+    [2.2, 4,  dark ],   // 4 – heavy blur, softer contrast (last resort)
+  ];
+
+  let best = null;
+  let passN = 0;
+  for (const [blur, contrast, inv] of passes) {
+    passN++;
+    status.className = srEnabled ? 'sr-pill' : 'partial-pill';
+    status.textContent = passN === 1 ? 'Scanning…' : `AI pass ${passN}/4…`;
+
+    render(blur, contrast, inv);
+    const { data: { text } } = await tessWorker.recognize(canvas);
+    const found = findNumber(text);
+
+    if (found?.full) return found;                            // ✓ done early
+    if (found && (!best || found.num.length > best.num.length)) best = found;
+  }
+  return best;
 }
 
 // ── apply result ─────────────────────────────────────────────
@@ -533,12 +552,15 @@ function clearNum() {
 async function loop() {
   if (looping || !ready) return;
   looping = true;
+  let found = null;
   try {
-    const found = useNative ? await scanNative() : await scanTess();
+    found = useNative ? await scanNative() : await scanTess();
     applyResult(found);
   } catch(e) { console.error(e); }
   looping = false;
-  setTimeout(loop, useNative ? 200 : 500);
+  // If we only have a partial number, retry faster to complete it
+  const partial = found && !found.full;
+  setTimeout(loop, useNative ? 200 : partial ? 300 : 500);
 }
 
 // ── boot ─────────────────────────────────────────────────────
