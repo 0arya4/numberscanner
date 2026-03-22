@@ -10,7 +10,7 @@
     *{margin:0;padding:0;box-sizing:border-box;-webkit-tap-highlight-color:transparent}
 
     body{
-      background:#080812;color:#fff;
+      background:#070b0e;color:#fff;
       font-family:'Inter',sans-serif;
       height:100dvh;display:flex;flex-direction:column;align-items:center;overflow:hidden
     }
@@ -25,30 +25,33 @@
     #header-left{display:flex;align-items:center;gap:7px}
     #header h1{
       font-size:.72rem;font-weight:700;letter-spacing:3.5px;
-      text-transform:uppercase;
-      color:#60a5fa
+      text-transform:uppercase;color:#2dd4bf
     }
     #badge{
       font-size:.55rem;padding:3px 9px;border-radius:20px;
-      background:rgba(96,165,250,.1);border:1px solid rgba(96,165,250,.25);
-      color:#60a5fa;letter-spacing:1px;font-weight:600
+      background:rgba(45,212,191,.1);border:1px solid rgba(45,212,191,.25);
+      color:#2dd4bf;letter-spacing:1px;font-weight:600
     }
 
     /* ── camera wrap ── */
     #wrap{position:relative;width:100%;max-width:540px;flex:1;overflow:hidden;background:#000}
-    #video{width:100%;height:100%;object-fit:cover}
+    #video{
+      width:100%;height:100%;object-fit:cover;
+      transform-origin:center center;
+      transition:transform .4s ease
+    }
 
     /* ── scan box ── */
     #box{
       position:absolute;pointer-events:none;
       border-radius:10px;
-      border:2px solid rgba(96,165,250,.6);
-      box-shadow:0 0 0 9999px rgba(0,0,0,.6);
+      border:2px solid rgba(45,212,191,.65);
+      box-shadow:0 0 0 9999px rgba(0,0,0,.62);
       transition:border-color .2s,box-shadow .2s
     }
     #box.hit{
-      border-color:#22c55e;
-      box-shadow:0 0 0 9999px rgba(0,0,0,.5),0 0 30px rgba(34,197,94,.55)
+      border-color:#4ade80;
+      box-shadow:0 0 0 9999px rgba(0,0,0,.5),0 0 28px rgba(74,222,128,.5)
     }
 
     /* corner ticks */
@@ -61,37 +64,42 @@
     /* scan sweep */
     #line{
       position:absolute;left:6px;right:6px;height:2px;
-      background:linear-gradient(90deg,transparent,#60a5fa,transparent);
-      filter:blur(.6px);
-      animation:sweep 1.2s ease-in-out infinite
+      background:linear-gradient(90deg,transparent,#2dd4bf,transparent);
+      filter:blur(.5px);
+      animation:sweep 1.3s ease-in-out infinite
     }
-    #box.hit #line{background:linear-gradient(90deg,transparent,#22c55e,transparent)}
+    #box.hit #line{background:linear-gradient(90deg,transparent,#4ade80,transparent)}
     @keyframes sweep{
       0%{top:4px;opacity:0}12%{opacity:1}88%{opacity:1}100%{top:calc(100% - 4px);opacity:0}
     }
 
+    /* zoom pill top-right */
+    #zoom-pill{
+      position:absolute;top:12px;right:12px;
+      background:rgba(7,11,14,.75);backdrop-filter:blur(8px);
+      border:1px solid rgba(45,212,191,.25);border-radius:20px;
+      color:#2dd4bf;font-size:.65rem;font-weight:700;letter-spacing:1px;
+      padding:5px 12px;cursor:pointer;user-select:none;
+      transition:background .15s
+    }
+    #zoom-pill:active{background:rgba(45,212,191,.15)}
+
     /* status pill */
     #status-pill{
       position:absolute;bottom:12px;left:50%;transform:translateX(-50%);
-      background:rgba(8,8,18,.85);backdrop-filter:blur(10px);
+      background:rgba(7,11,14,.85);backdrop-filter:blur(10px);
       border:1px solid rgba(255,255,255,.08);border-radius:20px;
       font-size:.68rem;letter-spacing:1px;color:#64748b;
       padding:5px 16px;white-space:nowrap;pointer-events:none;
       transition:all .2s
     }
-    #status-pill.hit-pill{
-      background:rgba(34,197,94,.12);
-      border-color:rgba(34,197,94,.35);color:#22c55e
-    }
-    #status-pill.partial-pill{
-      background:rgba(96,165,250,.1);
-      border-color:rgba(96,165,250,.3);color:#60a5fa
-    }
+    #status-pill.hit-pill{background:rgba(74,222,128,.12);border-color:rgba(74,222,128,.35);color:#4ade80}
+    #status-pill.partial-pill{background:rgba(45,212,191,.1);border-color:rgba(45,212,191,.3);color:#2dd4bf}
 
     /* ── bottom panel ── */
     #panel{
       width:100%;max-width:540px;
-      background:#0c0c1a;
+      background:#0b1014;
       border-top:1px solid rgba(255,255,255,.05);
       padding:14px 16px 18px;display:flex;flex-direction:column;gap:10px
     }
@@ -104,47 +112,37 @@
       display:flex;align-items:center;gap:8px;
       transition:border-color .2s,background .2s
     }
-    #num-card.active{
-      background:rgba(34,197,94,.04);
-      border-color:rgba(34,197,94,.2)
-    }
-    #num-card.partial-card{
-      background:rgba(96,165,250,.04);
-      border-color:rgba(96,165,250,.2)
-    }
+    #num-card.active{background:rgba(74,222,128,.04);border-color:rgba(74,222,128,.2)}
+    #num-card.partial-card{background:rgba(45,212,191,.04);border-color:rgba(45,212,191,.2)}
+
     #result{
       flex:1;font-family:'JetBrains Mono',monospace;
       font-size:1.45rem;font-weight:800;letter-spacing:2px;
-      color:#60a5fa;
-      min-height:1.8rem;transition:color .2s
+      color:#2dd4bf;min-height:1.8rem;transition:color .2s
     }
-    #result.empty{color:#1e1e30;font-size:.95rem;letter-spacing:0;font-weight:400;font-family:'Inter',sans-serif}
-    #result.full{color:#22c55e}
-    #result.partial{color:#93c5fd}
+    #result.empty{color:#1c2a2e;font-size:.95rem;letter-spacing:0;font-weight:400;font-family:'Inter',sans-serif}
+    #result.full{color:#4ade80}
+    #result.partial{color:#5eead4}
 
     /* button group */
     #btn-group{display:flex;gap:7px;flex-shrink:0}
 
     /* copy btn */
     #copy-btn{
-      background:rgba(96,165,250,.12);
-      border:1px solid rgba(96,165,250,.28);
-      color:#60a5fa;padding:9px 16px;
-      border-radius:9px;font-size:.78rem;font-weight:700;
-      cursor:pointer;transition:background .15s,transform .1s;
-      white-space:nowrap
+      background:rgba(45,212,191,.12);border:1px solid rgba(45,212,191,.28);
+      color:#2dd4bf;padding:9px 16px;border-radius:9px;
+      font-size:.78rem;font-weight:700;cursor:pointer;
+      transition:background .15s,transform .1s;white-space:nowrap
     }
-    #copy-btn:active{background:rgba(96,165,250,.3);transform:scale(.96)}
-    #copy-btn.done{background:rgba(34,197,94,.15);border-color:rgba(34,197,94,.3);color:#22c55e}
+    #copy-btn:active{background:rgba(45,212,191,.28);transform:scale(.96)}
+    #copy-btn.done{background:rgba(74,222,128,.15);border-color:rgba(74,222,128,.3);color:#4ade80}
 
     /* clear btn */
     #clear-btn{
-      background:rgba(255,255,255,.05);
-      border:1px solid rgba(255,255,255,.1);
-      color:#475569;padding:9px 14px;
-      border-radius:9px;font-size:.78rem;font-weight:700;
-      cursor:pointer;transition:background .15s,transform .1s;
-      white-space:nowrap
+      background:rgba(255,255,255,.05);border:1px solid rgba(255,255,255,.1);
+      color:#475569;padding:9px 14px;border-radius:9px;
+      font-size:.78rem;font-weight:700;cursor:pointer;
+      transition:background .15s,transform .1s;white-space:nowrap
     }
     #clear-btn:active{background:rgba(255,255,255,.1);transform:scale(.96)}
 
@@ -152,18 +150,18 @@
     #call-btn{
       display:flex;align-items:center;justify-content:center;gap:9px;
       width:100%;padding:16px;
-      background:linear-gradient(135deg,#1d4ed8,#3b82f6);
-      color:#fff;font-weight:700;font-size:1.05rem;
+      background:linear-gradient(135deg,#0d9488,#2dd4bf);
+      color:#07110e;font-weight:700;font-size:1.05rem;
       border:none;border-radius:13px;cursor:pointer;
       text-align:center;text-decoration:none;letter-spacing:.4px;
-      box-shadow:0 4px 24px rgba(59,130,246,.25);
+      box-shadow:0 4px 24px rgba(45,212,191,.2);
       transition:opacity .2s,transform .1s
     }
     #call-btn:active{transform:scale(.98);opacity:.88}
     #call-btn.off{
       background:rgba(255,255,255,.03);
       border:1px solid rgba(255,255,255,.06);
-      color:#1e1e30;pointer-events:none;box-shadow:none
+      color:#1e2a2a;pointer-events:none;box-shadow:none
     }
 
     canvas{display:none}
@@ -173,8 +171,8 @@
 
 <div id="header">
   <div id="header-left">
-    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#60a5fa" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
-      <path d="M3 9l9-7 9 7v11a2 2 0 01-2 2H5a2 2 0 01-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/>
+    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#2dd4bf" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+      <path d="M22 16.92v3a2 2 0 01-2.18 2 19.79 19.79 0 01-8.63-3.07A19.5 19.5 0 013.07 10.8 19.79 19.79 0 01.1 2.18 2 2 0 012.08 0h3a2 2 0 012 1.72c.127.96.361 1.903.7 2.81a2 2 0 01-.45 2.11L6.09 7.91a16 16 0 006 6l1.27-1.27a2 2 0 012.11-.45c.907.339 1.85.573 2.81.7A2 2 0 0122 16.92z"/>
     </svg>
     <h1>Iraqi Scanner</h1>
   </div>
@@ -188,6 +186,7 @@
     <div class="c bl"></div><div class="c br"></div>
     <div id="line"></div>
   </div>
+  <div id="zoom-pill" onclick="toggleZoom()">2×</div>
   <div id="status-pill">Starting…</div>
 </div>
 
@@ -212,7 +211,6 @@
 <script>
 // ── number matching ──────────────────────────────────────────
 function findNumber(text) {
-  // remove spaces/dashes/dots between digits (handles "077 043 363 30" style)
   const d = text.replace(/(\d)[\s\-\.]+(\d)/g, '$1$2').replace(/[^0-9]/g, '');
   let m = d.match(/07\d{9}/);
   if (m) return { num: m[0], full: true };
@@ -222,19 +220,23 @@ function findNumber(text) {
 }
 
 // ── DOM ──────────────────────────────────────────────────────
-const video   = document.getElementById('video');
-const canvas  = document.getElementById('canvas');
-const ctx     = canvas.getContext('2d');
-const box     = document.getElementById('box');
-const badge   = document.getElementById('badge');
-const status  = document.getElementById('status-pill');
-const result  = document.getElementById('result');
-const numCard = document.getElementById('num-card');
-const callBtn = document.getElementById('call-btn');
-const copyBtn = document.getElementById('copy-btn');
+const video     = document.getElementById('video');
+const canvas    = document.getElementById('canvas');
+const ctx       = canvas.getContext('2d');
+const box       = document.getElementById('box');
+const badge     = document.getElementById('badge');
+const status    = document.getElementById('status-pill');
+const result    = document.getElementById('result');
+const numCard   = document.getElementById('num-card');
+const callBtn   = document.getElementById('call-btn');
+const copyBtn   = document.getElementById('copy-btn');
+const zoomPill  = document.getElementById('zoom-pill');
 
 let lastFull = '', looping = false, ready = false;
 let useNative = false, nativeDetector = null, tessWorker = null;
+let videoTrack = null;
+let hwZoom = false, cssZoomOn = true; // 2x on by default
+let cssScale = 2;
 
 // ── scan-box layout ──────────────────────────────────────────
 const BW = 0.90, BH = 0.19;
@@ -244,6 +246,49 @@ function posBox() {
   Object.assign(box.style, { left: bx+'px', top: by+'px', width: bw+'px', height: bh+'px' });
 }
 window.addEventListener('resize', posBox);
+
+// ── zoom ─────────────────────────────────────────────────────
+async function applyHardwareZoom(level) {
+  if (!videoTrack) return false;
+  try {
+    const caps = videoTrack.getCapabilities();
+    if (!caps.zoom) return false;
+    const target = Math.min(level, caps.zoom.max);
+    await videoTrack.applyConstraints({ advanced: [{ zoom: target }] });
+    return true;
+  } catch(e) { return false; }
+}
+
+function applyCSSZoom(on) {
+  video.style.transform = on ? `scale(${cssScale})` : 'scale(1)';
+}
+
+async function initZoom() {
+  // Try hardware 2x zoom first (no quality loss)
+  hwZoom = await applyHardwareZoom(2);
+  if (hwZoom) {
+    zoomPill.textContent = '2× HW';
+    // no CSS zoom needed since hardware handles it
+    video.style.transform = 'scale(1)';
+  } else {
+    // CSS zoom: scale video 2x within overflow:hidden container
+    // Quality is preserved — camera still captures at full res, we just see the centre crop
+    applyCSSZoom(true);
+    zoomPill.textContent = '2×';
+  }
+  cssZoomOn = true;
+}
+
+async function toggleZoom() {
+  cssZoomOn = !cssZoomOn;
+  if (hwZoom) {
+    await applyHardwareZoom(cssZoomOn ? 2 : 1);
+    zoomPill.textContent = cssZoomOn ? '2× HW' : '1×';
+  } else {
+    applyCSSZoom(cssZoomOn);
+    zoomPill.textContent = cssZoomOn ? '2×' : '1×';
+  }
+}
 
 // ── camera ───────────────────────────────────────────────────
 async function startCamera() {
@@ -258,8 +303,10 @@ async function startCamera() {
     stream = await navigator.mediaDevices.getUserMedia({ video: true, audio: false });
   }
   video.srcObject = stream;
+  videoTrack = stream.getVideoTracks()[0];
   await new Promise(r => { video.onloadedmetadata = r; });
   posBox();
+  await initZoom();
 }
 
 // ── engine init ──────────────────────────────────────────────
@@ -288,17 +335,27 @@ async function initEngine() {
   ready = true;
 }
 
-// ── correct crop rect for object-fit:cover ───────────────────
+// ── correct crop rect for object-fit:cover + CSS zoom ────────
 function getCropRect() {
   const vw = video.videoWidth, vh = video.videoHeight;
   const ew = video.offsetWidth,  eh = video.offsetHeight;
   if (!vw || !vh) return null;
+
+  // When CSS zoom is active (no hardware zoom), user sees the centre 1/scale of the frame.
+  // We match OCR crop to that visible region for accuracy.
+  const zoomFactor = (cssZoomOn && !hwZoom) ? cssScale : 1;
+
   const vAR = vw / vh, eAR = ew / eh;
   let sx = 0, sy = 0, sw = vw, sh = vh;
   if (vAR > eAR) { sw = Math.round(vh * eAR); sx = Math.round((vw - sw) / 2); }
   else            { sh = Math.round(vw / eAR); sy = Math.round((vh - sh) / 2); }
-  const bw = sw * BW, bh = sh * BH;
-  return { x: sx + (sw - bw) / 2, y: sy + (sh - bh) / 2, w: bw, h: bh };
+
+  // Shrink crop to the visible zoomed region
+  const zsw = sw / zoomFactor, zsh = sh / zoomFactor;
+  sx += (sw - zsw) / 2; sy += (sh - zsh) / 2;
+
+  const bw = zsw * BW, bh = zsh * BH;
+  return { x: sx + (zsw - bw) / 2, y: sy + (zsh - bh) / 2, w: bw, h: bh };
 }
 
 // ── native scan ──────────────────────────────────────────────
@@ -316,17 +373,17 @@ async function scanTess() {
   const sw = Math.round(r.w * SCALE), sh = Math.round(r.h * SCALE);
   canvas.width = sw; canvas.height = sh;
 
-  // Quick avg brightness sample (downsample 4x for speed)
-  const sx2 = sw >> 2, sy2 = sh >> 2;
+  // Quick brightness sample
+  const qw = sw >> 2, qh = sh >> 2;
   ctx.filter = 'none';
-  ctx.drawImage(video, r.x, r.y, r.w, r.h, 0, 0, sx2, sy2);
-  const sample = ctx.getImageData(0, 0, sx2, sy2).data;
+  ctx.drawImage(video, r.x, r.y, r.w, r.h, 0, 0, qw, qh);
+  const sample = ctx.getImageData(0, 0, qw, qh).data;
   let sum = 0;
   for (let i = 0; i < sample.length; i += 4)
     sum += 0.299 * sample[i] + 0.587 * sample[i+1] + 0.114 * sample[i+2];
   const dark = (sum / (sample.length / 4)) < 118;
 
-  // GPU-accelerated contrast + optional invert
+  // GPU-accelerated high-contrast render
   ctx.filter = dark
     ? 'grayscale(1) contrast(6) invert(1)'
     : 'grayscale(1) contrast(6)';
@@ -338,6 +395,8 @@ async function scanTess() {
 }
 
 // ── apply result ─────────────────────────────────────────────
+const PHONE_SVG = `<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M22 16.92v3a2 2 0 01-2.18 2 19.79 19.79 0 01-8.63-3.07A19.5 19.5 0 013.07 10.8 19.79 19.79 0 01.1 2.18 2 2 0 012.08 0h3a2 2 0 012 1.72c.127.96.361 1.903.7 2.81a2 2 0 01-.45 2.11L6.09 7.91a16 16 0 006 6l1.27-1.27a2 2 0 012.11-.45c.907.339 1.85.573 2.81.7A2 2 0 0122 16.92z"/></svg>`;
+
 function applyResult(found) {
   if (!found) {
     box.className = '';
@@ -345,7 +404,6 @@ function applyResult(found) {
     status.textContent = 'Scanning…';
     return;
   }
-
   const { num, full } = found;
   result.textContent = num;
   result.classList.remove('empty', 'full', 'partial');
@@ -357,11 +415,9 @@ function applyResult(found) {
     box.className = 'hit';
     status.className = 'hit-pill';
     status.textContent = '✓ Got it!';
-
     callBtn.href = 'tel:' + num;
-    callBtn.innerHTML = `<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M22 16.92v3a2 2 0 01-2.18 2 19.79 19.79 0 01-8.63-3.07A19.5 19.5 0 013.07 10.8 19.79 19.79 0 01.1 2.18 2 2 0 012.08 0h3a2 2 0 012 1.72c.127.96.361 1.903.7 2.81a2 2 0 01-.45 2.11L6.09 7.91a16 16 0 006 6l1.27-1.27a2 2 0 012.11-.45c.907.339 1.85.573 2.81.7A2 2 0 0122 16.92z"/></svg> Call ${num}`;
+    callBtn.innerHTML = `${PHONE_SVG} Call ${num}`;
     callBtn.classList.remove('off');
-
     if (num !== lastFull) {
       lastFull = num;
       navigator.clipboard.writeText(num).catch(() => {});
@@ -398,22 +454,20 @@ function clearNum() {
   status.className = '';
   status.textContent = 'Scanning…';
   callBtn.href = '#';
-  callBtn.innerHTML = `<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M22 16.92v3a2 2 0 01-2.18 2 19.79 19.79 0 01-8.63-3.07A19.5 19.5 0 013.07 10.8 19.79 19.79 0 01.1 2.18 2 2 0 012.08 0h3a2 2 0 012 1.72c.127.96.361 1.903.7 2.81a2 2 0 01-.45 2.11L6.09 7.91a16 16 0 006 6l1.27-1.27a2 2 0 012.11-.45c.907.339 1.85.573 2.81.7A2 2 0 0122 16.92z"/></svg> Call`;
+  callBtn.innerHTML = `${PHONE_SVG} Call`;
   callBtn.classList.add('off');
   copyBtn.textContent = 'Copy';
   copyBtn.classList.remove('done');
 }
 
-// ── main loop (0.5 s cadence) ────────────────────────────────
+// ── main loop ────────────────────────────────────────────────
 async function loop() {
   if (looping || !ready) return;
   looping = true;
   try {
     const found = useNative ? await scanNative() : await scanTess();
     applyResult(found);
-  } catch(e) {
-    console.error(e);
-  }
+  } catch(e) { console.error(e); }
   looping = false;
   setTimeout(loop, useNative ? 200 : 500);
 }
