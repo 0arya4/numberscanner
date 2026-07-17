@@ -1031,7 +1031,7 @@
           </button>
         </div>
         <div id="scanHint" class="lookup-panel lookup-hint">
-          <span><i class="fa-solid fa-wand-magic-sparkles" aria-hidden="true"></i>Scan phone numbers or Red Pack barcodes</span>
+          <span><i class="fa-solid fa-wand-magic-sparkles" aria-hidden="true"></i>Center one 07 number or Red Pack barcode</span>
         </div>
         <div id="lookupPanel" class="lookup-panel" hidden>
           <form id="lookupForm" class="lookup-form">
@@ -1452,6 +1452,18 @@
       };
     }
 
+    function getScreenNumberRect(rect) {
+      // Laptop tables are usually one clean horizontal text row. A narrower
+      // center strip removes adjacent columns while keeping the number sharp.
+      var lineHeight = rect.h * 0.5;
+      return {
+        x: rect.x + rect.w * 0.025,
+        y: rect.y + (rect.h - lineHeight) / 2,
+        w: rect.w * 0.95,
+        h: lineHeight
+      };
+    }
+
     function inspectFrame(rect) {
       var sampleWidth = 144;
       var sampleHeight = 32;
@@ -1493,8 +1505,8 @@
         sharpness: sharpness,
         movement: movement,
         quality: quality,
-        dark: mean < 42,
-        bright: mean > 226,
+        dark: mean < 30,
+        bright: mean > 242,
         blurry: sharpness < 4.2,
         moving: motion > 0 && movement > 29
       };
@@ -1780,17 +1792,18 @@
     }
 
     async function scanNative(rect) {
-      var width = clamp(Math.round(100 * (rect.w / rect.h)), 520, 940);
+      var numberRect = getScreenNumberRect(rect);
+      var width = clamp(Math.round(132 * (numberRect.w / numberRect.h)), 620, 1120);
       nativeCanvas.width = width;
-      nativeCanvas.height = 100;
-      nativeCtx.drawImage(video, rect.x, rect.y, rect.w, rect.h, 0, 0, width, 100);
+      nativeCanvas.height = 132;
+      nativeCtx.drawImage(video, numberRect.x, numberRect.y, numberRect.w, numberRect.h, 0, 0, width, 132);
       var detections = await scanner.nativeDetector.detect(nativeCanvas);
       var best = null;
 
       for (var i = 0; i < detections.length; i++) {
-        var candidate = findScannerCandidate(detections[i].rawValue || "");
+        var candidate = findPhoneCandidate(detections[i].rawValue || "");
         if (!candidate) continue;
-        if (!best || candidate.kind === "barcode" || candidateLength(candidate) > candidateLength(best)) best = candidate;
+        if (!best || candidateLength(candidate) > candidateLength(best)) best = candidate;
       }
 
       return best ? { candidate: best, confidence: 92, engine: "native" } : null;
@@ -1829,9 +1842,10 @@
     async function recognizeTesseract(rect) {
       var worker = await ensureTesseract();
       var started = performance.now();
-      prepareOcrCanvas(rect, "binary");
+      var numberRect = getScreenNumberRect(rect);
+      prepareOcrCanvas(numberRect, "binary", 220);
       var primaryData = (await worker.recognize(ocrCanvas)).data;
-      var primaryCandidate = findScannerCandidate(primaryData.text);
+      var primaryCandidate = findPhoneCandidate(primaryData.text);
       var best = primaryCandidate ? {
         candidate: primaryCandidate,
         confidence: Number(primaryData.confidence) || 0,
@@ -1840,9 +1854,9 @@
 
       var needsFallback = !best || !best.candidate.full || best.confidence < 56;
       if (needsFallback) {
-        prepareOcrCanvas(rect, "soft");
+        prepareOcrCanvas(numberRect, "soft", 220);
         var fallbackData = (await worker.recognize(ocrCanvas)).data;
-        var fallbackCandidate = findScannerCandidate(fallbackData.text);
+        var fallbackCandidate = findPhoneCandidate(fallbackData.text);
         var fallback = fallbackCandidate ? {
           candidate: fallbackCandidate,
           confidence: Number(fallbackData.confidence) || 0,
@@ -1852,9 +1866,9 @@
       }
 
       if (!best) {
-        prepareOcrCanvas(getFocusedCropRect(rect), "binary", 190);
+        prepareOcrCanvas(getScreenNumberRect(getFocusedCropRect(rect)), "binary", 260);
         var smallTextData = (await worker.recognize(ocrCanvas)).data;
-        var smallTextCandidate = findScannerCandidate(smallTextData.text);
+        var smallTextCandidate = findPhoneCandidate(smallTextData.text);
         if (smallTextCandidate) {
           best = {
             candidate: smallTextCandidate,
@@ -1877,13 +1891,14 @@
       var started = performance.now();
       // Keep the recognizer focused on the printed-number zone and preserve
       // real pixels; the model is never asked to invent missing detail.
-      prepareOcrCanvas(rect, "soft", 300);
+      var numberRect = getScreenNumberRect(rect);
+      prepareOcrCanvas(numberRect, "soft", 360);
       var output = await scanner.digitModel.recognize(ocrCanvas, {
         flatten: true,
         noCache: true,
         strategy: "per-line"
       });
-      var candidate = findScannerCandidate(output.text || "");
+      var candidate = findPhoneCandidate(output.text || "");
       latencyMetric.textContent = Math.round(performance.now() - started) + "ms";
       if (!candidate) return null;
 
@@ -2127,11 +2142,11 @@
       var frame = inspectFrame(rect);
       qualityMetric.textContent = frame.quality + "%";
 
-      if (frame.dark) {
+      if (frame.dark && frame.sharpness < 4.8) {
         setStatus("Too dark — add light or use the flash", "warn", "fa-solid fa-moon");
         return;
       }
-      if (frame.bright) {
+      if (frame.bright && frame.sharpness < 4.8) {
         setStatus("Too much glare — tilt the camera", "warn", "fa-solid fa-sun");
         return;
       }
