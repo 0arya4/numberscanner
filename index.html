@@ -7,6 +7,7 @@
   <meta name="description" content="Fast on-device Iraqi phone number scanner with AI-assisted OCR." />
   <title>Iraqi Scanner AI</title>
   <script src="https://cdn.jsdelivr.net/npm/tesseract.js@7/dist/tesseract.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/@zxing/browser@0.1.5/umd/zxing-browser.min.js"></script>
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@600;700&family=Space+Grotesk:wght@400;500;600;700&display=swap" rel="stylesheet" />
@@ -455,6 +456,140 @@
       animation: none;
     }
 
+    .lookup-dock {
+      position: absolute;
+      z-index: 7;
+      left: 12px;
+      right: 12px;
+      bottom: 57px;
+      padding: 8px;
+      border: 1px solid rgba(var(--cyan-rgb), .18);
+      border-radius: 16px;
+      background:
+        linear-gradient(135deg, rgba(var(--cyan-rgb), .1), rgba(var(--violet-rgb), .08)),
+        rgba(7, 10, 23, .82);
+      box-shadow: 0 12px 36px rgba(0, 0, 0, .23), inset 0 1px 0 rgba(255, 255, 255, .06);
+      backdrop-filter: blur(18px);
+    }
+
+    .lookup-tabs {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 5px;
+    }
+
+    .lookup-tab {
+      min-height: 30px;
+      border: 1px solid transparent;
+      border-radius: 9px;
+      color: #98a6c4;
+      background: transparent;
+      cursor: pointer;
+      font-size: .6rem;
+      font-weight: 700;
+      letter-spacing: .04em;
+      transition: color .18s ease, border-color .18s ease, background .18s ease;
+    }
+
+    .lookup-tab.active {
+      color: var(--cyan);
+      border-color: rgba(var(--cyan-rgb), .28);
+      background: rgba(var(--cyan-rgb), .11);
+    }
+
+    .lookup-panel {
+      margin-top: 7px;
+    }
+
+    .lookup-panel[hidden] {
+      display: none;
+    }
+
+    .lookup-hint {
+      min-height: 28px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: #a7b3cf;
+      font-size: .59rem;
+      text-align: center;
+    }
+
+    .lookup-hint i {
+      margin-right: 6px;
+      color: var(--violet);
+    }
+
+    .lookup-form {
+      display: grid;
+      grid-template-columns: minmax(0, 1fr) auto;
+      gap: 7px;
+    }
+
+    .lookup-input {
+      min-width: 0;
+      height: 38px;
+      padding: 0 11px;
+      border: 1px solid rgba(255, 255, 255, .12);
+      border-radius: 10px;
+      outline: none;
+      color: var(--text);
+      background: rgba(3, 5, 14, .58);
+      font-family: "JetBrains Mono", monospace;
+      font-size: .8rem;
+      letter-spacing: .08em;
+    }
+
+    .lookup-input:focus {
+      border-color: rgba(var(--cyan-rgb), .55);
+      box-shadow: 0 0 0 3px rgba(var(--cyan-rgb), .09);
+    }
+
+    .lookup-input::placeholder {
+      color: #68738d;
+      font-family: "Space Grotesk", sans-serif;
+      font-size: .64rem;
+      letter-spacing: 0;
+    }
+
+    .lookup-submit {
+      height: 38px;
+      padding: 0 13px;
+      border-radius: 10px;
+      color: #06141a;
+      background: linear-gradient(135deg, var(--cyan), #83f2ff);
+      cursor: pointer;
+      font-size: .64rem;
+      font-weight: 700;
+      letter-spacing: .03em;
+      transition: transform .16s ease, filter .16s ease;
+    }
+
+    .lookup-submit:active {
+      transform: scale(.95);
+    }
+
+    .lookup-submit:disabled {
+      cursor: wait;
+      filter: saturate(.3);
+    }
+
+    .lookup-message {
+      min-height: 13px;
+      margin: 6px 2px 0;
+      color: #9ba9c8;
+      font-size: .53rem;
+      text-align: center;
+    }
+
+    .lookup-message.error {
+      color: var(--amber);
+    }
+
+    .lookup-message.success {
+      color: var(--green);
+    }
+
     .panel {
       flex: 0 0 auto;
       padding: 14px 14px calc(14px + env(safe-area-inset-bottom));
@@ -560,6 +695,21 @@
     #result.verified {
       color: var(--green);
       text-shadow: 0 0 18px rgba(var(--green-rgb), .18);
+    }
+
+    #location {
+      display: none;
+      margin-top: 3px;
+      color: #9eacca;
+      font-size: .63rem;
+      font-weight: 500;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+
+    #location.visible {
+      display: block;
     }
 
     .confidence {
@@ -766,6 +916,10 @@
       .action {
         height: 50px;
       }
+
+      .lookup-dock {
+        bottom: 50px;
+      }
     }
 
     @media (prefers-reduced-motion: reduce) {
@@ -820,6 +974,27 @@
         <span class="reticle"></span>
       </div>
 
+      <section id="lookupDock" class="lookup-dock" aria-label="ID lookup">
+        <div class="lookup-tabs" role="tablist" aria-label="Scanner mode">
+          <button id="scanModeBtn" class="lookup-tab active" type="button" role="tab" aria-selected="true">
+            <i class="fa-solid fa-camera" aria-hidden="true"></i> Live scan
+          </button>
+          <button id="lookupModeBtn" class="lookup-tab" type="button" role="tab" aria-selected="false">
+            <i class="fa-solid fa-barcode" aria-hidden="true"></i> ID lookup
+          </button>
+        </div>
+        <div id="scanHint" class="lookup-panel lookup-hint">
+          <span><i class="fa-solid fa-wand-magic-sparkles" aria-hidden="true"></i>Scan phone numbers or Red Pack barcodes</span>
+        </div>
+        <div id="lookupPanel" class="lookup-panel" hidden>
+          <form id="lookupForm" class="lookup-form">
+            <input id="barcodeInput" class="lookup-input" type="text" inputmode="numeric" autocomplete="off" maxlength="12" placeholder="Enter barcode or ID" aria-label="Barcode or ID" />
+            <button id="lookupSubmit" class="lookup-submit" type="submit">Search</button>
+          </form>
+          <p id="lookupMessage" class="lookup-message">Phone and location only</p>
+        </div>
+      </section>
+
       <div id="cameraStatus" class="camera-status" aria-live="polite">
         <i class="fa-solid fa-atom" aria-hidden="true"></i>
         <span id="statusText">Starting camera…</span>
@@ -834,6 +1009,7 @@
             <span class="verified-label"><i class="fa-solid fa-shield-halved" aria-hidden="true"></i> AI verified</span>
           </div>
           <div id="result">07•• ••• ••••</div>
+          <div id="location"></div>
         </div>
         <div id="confidence" class="confidence" aria-label="Recognition confidence">
           <div class="confidence-value"><span id="confidenceValue">0%</span><small>match</small></div>
@@ -882,7 +1058,7 @@
     var BOX_WIDTH = 0.90;
     var BOX_HEIGHT = 0.20;
     var CSS_ZOOM = 1.8;
-    var OCR_HEIGHT = 104;
+    var OCR_HEIGHT = 136;
     var REQUIRED_VOTES = 2;
     var VOTE_WINDOW_MS = 4200;
     var MIN_TESS_CONFIDENCE = 42;
@@ -892,6 +1068,14 @@
     var target = document.getElementById("target");
     var cameraStatus = document.getElementById("cameraStatus");
     var statusText = document.getElementById("statusText");
+    var scanModeBtn = document.getElementById("scanModeBtn");
+    var lookupModeBtn = document.getElementById("lookupModeBtn");
+    var scanHint = document.getElementById("scanHint");
+    var lookupPanel = document.getElementById("lookupPanel");
+    var lookupForm = document.getElementById("lookupForm");
+    var barcodeInput = document.getElementById("barcodeInput");
+    var lookupSubmit = document.getElementById("lookupSubmit");
+    var lookupMessage = document.getElementById("lookupMessage");
     var engineBadge = document.getElementById("engineBadge");
     var engineLabel = document.getElementById("engineLabel");
     var zoomBtn = document.getElementById("zoomBtn");
@@ -899,6 +1083,7 @@
     var torchBtn = document.getElementById("torchBtn");
     var resultCard = document.getElementById("resultCard");
     var result = document.getElementById("result");
+    var locationText = document.getElementById("location");
     var confidence = document.getElementById("confidence");
     var confidenceValue = document.getElementById("confidenceValue");
     var qualityMetric = document.getElementById("qualityMetric");
@@ -925,12 +1110,19 @@
       worker: null,
       workerPromise: null,
       nativeDetector: null,
+      barcodeDetector: null,
+      zxingReader: null,
+      lastBarcodeAttempt: 0,
       nativeMisses: 0,
       hardwareZoom: false,
       zoomed: true,
       torchOn: false,
       previousFrame: null,
       votes: [],
+      barcodeVotes: [],
+      lastBarcode: "",
+      lookupInFlight: false,
+      mode: "scan",
       confirmed: null,
       lastCandidate: null,
       lastConfidence: 0,
@@ -962,6 +1154,51 @@
       confidence.style.setProperty("--score", (score * 3.6) + "deg");
       confidenceValue.textContent = score + "%";
     }
+
+    function setLookupMessage(message, tone) {
+      lookupMessage.textContent = message;
+      lookupMessage.className = "lookup-message" + (tone ? " " + tone : "");
+    }
+
+    function setLocation(value) {
+      if (value) {
+        locationText.textContent = value;
+        locationText.classList.add("visible");
+      } else {
+        locationText.textContent = "";
+        locationText.classList.remove("visible");
+      }
+    }
+
+    function selectMode(mode) {
+      scanner.mode = mode;
+      var lookupMode = mode === "lookup";
+      scanModeBtn.classList.toggle("active", !lookupMode);
+      scanModeBtn.setAttribute("aria-selected", String(!lookupMode));
+      lookupModeBtn.classList.toggle("active", lookupMode);
+      lookupModeBtn.setAttribute("aria-selected", String(lookupMode));
+      scanHint.hidden = lookupMode;
+      lookupPanel.hidden = !lookupMode;
+
+      if (lookupMode) {
+        setStatus("Enter a barcode or ID to search", "", "fa-solid fa-barcode");
+        setTimeout(function () { barcodeInput.focus(); }, 100);
+      } else {
+        setStatus("Scan phone numbers or barcodes", "", "fa-solid fa-crosshairs");
+      }
+    }
+
+    scanModeBtn.addEventListener("click", function () { selectMode("scan"); });
+    lookupModeBtn.addEventListener("click", function () { selectMode("lookup"); });
+    lookupForm.addEventListener("submit", function (event) {
+      event.preventDefault();
+      var barcode = normalizeDigits(barcodeInput.value).replace(/\D/g, "");
+      if (!/^\d{4,12}$/.test(barcode)) {
+        setLookupMessage("Enter a valid 4 to 12 digit barcode.", "error");
+        return;
+      }
+      lookupBarcode(barcode);
+    });
 
     function positionTarget() {
       var width = cameraShell.clientWidth;
@@ -1131,6 +1368,17 @@
       };
     }
 
+    function getFocusedCropRect(rect) {
+      var focusWidth = rect.w * 0.7;
+      var focusHeight = rect.h * 0.68;
+      return {
+        x: rect.x + (rect.w - focusWidth) / 2,
+        y: rect.y + (rect.h - focusHeight) / 2,
+        w: focusWidth,
+        h: focusHeight
+      };
+    }
+
     function inspectFrame(rect) {
       var sampleWidth = 144;
       var sampleHeight = 32;
@@ -1204,22 +1452,23 @@
       return threshold;
     }
 
-    function prepareOcrCanvas(rect, variant) {
-      var width = clamp(Math.round(OCR_HEIGHT * (rect.w / rect.h)), 480, 940);
+    function prepareOcrCanvas(rect, variant, targetHeight) {
+      var canvasHeight = targetHeight || OCR_HEIGHT;
+      var width = clamp(Math.round(canvasHeight * (rect.w / rect.h)), 480, 940);
       ocrCanvas.width = width;
-      ocrCanvas.height = OCR_HEIGHT;
+      ocrCanvas.height = canvasHeight;
       ocrCtx.imageSmoothingEnabled = true;
       ocrCtx.imageSmoothingQuality = "high";
       ocrCtx.filter = variant === "soft" ? "grayscale(1) contrast(1.7)" : "grayscale(1)";
-      ocrCtx.drawImage(video, rect.x, rect.y, rect.w, rect.h, 0, 0, width, OCR_HEIGHT);
+      ocrCtx.drawImage(video, rect.x, rect.y, rect.w, rect.h, 0, 0, width, canvasHeight);
       ocrCtx.filter = "none";
 
       if (variant === "soft") return ocrCanvas;
 
-      var image = ocrCtx.getImageData(0, 0, width, OCR_HEIGHT);
+      var image = ocrCtx.getImageData(0, 0, width, canvasHeight);
       var data = image.data;
       var histogram = new Uint32Array(256);
-      var total = width * OCR_HEIGHT;
+      var total = width * canvasHeight;
       var mean = 0;
 
       for (var i = 0; i < data.length; i += 4) {
@@ -1243,7 +1492,7 @@
       ocrCtx.putImageData(image, 0, 0);
       ocrCtx.fillStyle = "#fff";
       ocrCtx.fillRect(0, 0, width, 3);
-      ocrCtx.fillRect(0, OCR_HEIGHT - 3, width, 3);
+      ocrCtx.fillRect(0, canvasHeight - 3, width, 3);
       return ocrCanvas;
     }
 
@@ -1305,12 +1554,37 @@
       return null;
     }
 
+    function findBarcodeCandidate(text) {
+      var normalized = normalizeDigits(text);
+      var matches = normalized.match(/(?:^|[^\d])(\d{4,12})(?!\d)/g) || [];
+      var best = null;
+
+      for (var i = 0; i < matches.length; i++) {
+        var code = matches[i].replace(/\D/g, "");
+        if (/^07\d{9}$/.test(code) || /^9647\d{9}$/.test(code)) continue;
+        if (!best || Math.abs(code.length - 6) < Math.abs(best.value.length - 6)) {
+          best = { value: code, kind: "barcode", full: true };
+        }
+      }
+      return best;
+    }
+
+    function findScannerCandidate(text) {
+      return findPhoneCandidate(text) || findBarcodeCandidate(text);
+    }
+
+    function candidateLength(candidate) {
+      return candidate.kind === "barcode" ? candidate.value.length : candidate.local.length;
+    }
+
     function chooseBetter(first, second) {
       if (!first) return second;
       if (!second) return first;
       if (second.candidate.full && !first.candidate.full) return second;
       if (first.candidate.full && !second.candidate.full) return first;
-      if (second.candidate.local.length > first.candidate.local.length) return second;
+      if (second.candidate.kind === "barcode" && first.candidate.kind !== "barcode") return second;
+      if (first.candidate.kind === "barcode" && second.candidate.kind !== "barcode") return first;
+      if (candidateLength(second.candidate) > candidateLength(first.candidate)) return second;
       return second.confidence > first.confidence ? second : first;
     }
 
@@ -1345,7 +1619,29 @@
       }
     }
 
+    async function initializeBarcodeDetector() {
+      if ("BarcodeDetector" in window) {
+        try {
+          var supported = await BarcodeDetector.getSupportedFormats();
+          var preferred = ["code_128", "code_39", "codabar", "itf", "ean_13", "ean_8"];
+          var formats = preferred.filter(function (format) {
+            return supported.indexOf(format) >= 0;
+          });
+          scanner.barcodeDetector = formats.length
+            ? new BarcodeDetector({ formats: formats })
+            : new BarcodeDetector();
+        } catch (error) {
+          scanner.barcodeDetector = null;
+        }
+      }
+
+      if (window.ZXingBrowser && window.ZXingBrowser.BrowserMultiFormatReader) {
+        scanner.zxingReader = new ZXingBrowser.BrowserMultiFormatReader();
+      }
+    }
+
     async function initializeEngine() {
+      await initializeBarcodeDetector();
       if ("TextDetector" in window) {
         try {
           scanner.nativeDetector = new TextDetector();
@@ -1383,12 +1679,42 @@
       var best = null;
 
       for (var i = 0; i < detections.length; i++) {
-        var candidate = findPhoneCandidate(detections[i].rawValue || "");
+        var candidate = findScannerCandidate(detections[i].rawValue || "");
         if (!candidate) continue;
-        if (!best || candidate.full || candidate.local.length > best.local.length) best = candidate;
+        if (!best || candidate.kind === "barcode" || candidateLength(candidate) > candidateLength(best)) best = candidate;
       }
 
       return best ? { candidate: best, confidence: 92, engine: "native" } : null;
+    }
+
+    async function scanBarcode(rect) {
+      if (!scanner.barcodeDetector && !scanner.zxingReader) return null;
+      var now = performance.now();
+      if (now - scanner.lastBarcodeAttempt < 250) return null;
+      scanner.lastBarcodeAttempt = now;
+      var width = clamp(Math.round(150 * (rect.w / rect.h)), 520, 940);
+      nativeCanvas.width = width;
+      nativeCanvas.height = 150;
+      nativeCtx.drawImage(video, rect.x, rect.y, rect.w, rect.h, 0, 0, width, 150);
+
+      if (scanner.barcodeDetector) {
+        var detections = await scanner.barcodeDetector.detect(nativeCanvas);
+        for (var i = 0; i < detections.length; i++) {
+          var nativeCandidate = findBarcodeCandidate(detections[i].rawValue || "");
+          if (nativeCandidate) return { candidate: nativeCandidate, confidence: 98, engine: "barcode" };
+        }
+      }
+
+      if (scanner.zxingReader) {
+        try {
+          var result = await scanner.zxingReader.decodeFromCanvas(nativeCanvas);
+          var zxingCandidate = findBarcodeCandidate(result.getText ? result.getText() : "");
+          if (zxingCandidate) return { candidate: zxingCandidate, confidence: 96, engine: "barcode" };
+        } catch (error) {
+          // NotFoundException is the normal result for a frame without a barcode.
+        }
+      }
+      return null;
     }
 
     async function recognizeTesseract(rect) {
@@ -1396,7 +1722,7 @@
       var started = performance.now();
       prepareOcrCanvas(rect, "binary");
       var primaryData = (await worker.recognize(ocrCanvas)).data;
-      var primaryCandidate = findPhoneCandidate(primaryData.text);
+      var primaryCandidate = findScannerCandidate(primaryData.text);
       var best = primaryCandidate ? {
         candidate: primaryCandidate,
         confidence: Number(primaryData.confidence) || 0,
@@ -1407,13 +1733,26 @@
       if (needsFallback) {
         prepareOcrCanvas(rect, "soft");
         var fallbackData = (await worker.recognize(ocrCanvas)).data;
-        var fallbackCandidate = findPhoneCandidate(fallbackData.text);
+        var fallbackCandidate = findScannerCandidate(fallbackData.text);
         var fallback = fallbackCandidate ? {
           candidate: fallbackCandidate,
           confidence: Number(fallbackData.confidence) || 0,
           engine: "tesseract"
         } : null;
         best = chooseBetter(best, fallback);
+      }
+
+      if (!best) {
+        prepareOcrCanvas(getFocusedCropRect(rect), "binary", 190);
+        var smallTextData = (await worker.recognize(ocrCanvas)).data;
+        var smallTextCandidate = findScannerCandidate(smallTextData.text);
+        if (smallTextCandidate) {
+          best = {
+            candidate: smallTextCandidate,
+            confidence: Number(smallTextData.confidence) || 0,
+            engine: "tesseract"
+          };
+        }
       }
 
       latencyMetric.textContent = Math.round(performance.now() - started) + "ms";
@@ -1438,13 +1777,93 @@
       );
     }
 
+    function lookupPhoneCandidate(phone) {
+      var normalized = normalizeDigits(phone).replace(/[^\d+]/g, "");
+      var canonical = canonicalPhone(normalized);
+      if (canonical) return canonical;
+      if (/^\d{7,15}$/.test(normalized)) {
+        return {
+          local: normalized,
+          international: normalized.startsWith("0") ? "964" + normalized.slice(1) : normalized,
+          full: true
+        };
+      }
+      return null;
+    }
+
+    async function lookupBarcode(barcode) {
+      if (scanner.lookupInFlight) return;
+      scanner.lookupInFlight = true;
+      lookupSubmit.disabled = true;
+      barcodeInput.value = barcode;
+      setLookupMessage("Searching secure company records…");
+      setStatus("Looking up ID " + barcode + "…", "", "fa-solid fa-shield-halved");
+
+      try {
+        var response = await fetch("/api/lookup", {
+          method: "POST",
+          headers: { "Content-Type": "application/json", "Accept": "application/json" },
+          body: JSON.stringify({ barcode: barcode })
+        });
+        var payload = await response.json().catch(function () { return {}; });
+        if (!response.ok) throw new Error(payload.error || "Lookup failed");
+
+        var candidate = lookupPhoneCandidate(payload.phone || "");
+        if (!candidate) throw new Error("Lookup returned an invalid phone number");
+
+        confirmNumber(candidate, 100, payload.location || "");
+        setLookupMessage("ID " + barcode + " found", "success");
+        showToast("Phone and location retrieved");
+      } catch (error) {
+        console.error(error);
+        setLookupMessage(error.message || "Lookup failed", "error");
+        setStatus("ID lookup failed", "warn", "fa-solid fa-triangle-exclamation");
+      } finally {
+        scanner.lookupInFlight = false;
+        lookupSubmit.disabled = false;
+      }
+    }
+
+    function registerBarcodeCandidate(candidate, score) {
+      var now = Date.now();
+      scanner.barcodeVotes = scanner.barcodeVotes.filter(function (vote) {
+        return now - vote.time <= VOTE_WINDOW_MS;
+      });
+      scanner.barcodeVotes.push({ code: candidate.value, confidence: score, time: now });
+
+      var matching = scanner.barcodeVotes.filter(function (vote) {
+        return vote.code === candidate.value;
+      });
+      var votes = Math.min(matching.length, REQUIRED_VOTES);
+      var average = matching.reduce(function (sum, vote) {
+        return sum + vote.confidence;
+      }, 0) / matching.length;
+
+      if (votes < REQUIRED_VOTES) {
+        result.textContent = "ID " + candidate.value;
+        result.className = "candidate";
+        resultCard.classList.remove("verified");
+        target.classList.remove("verified");
+        target.classList.add("locking");
+        setConfidence(average);
+        voteMetric.textContent = votes + "/" + REQUIRED_VOTES;
+        setStatus("Barcode verification " + votes + "/" + REQUIRED_VOTES, "warn", "fa-solid fa-barcode");
+        return;
+      }
+
+      if (scanner.lastBarcode === candidate.value && scanner.lookupInFlight) return;
+      scanner.lastBarcode = candidate.value;
+      selectMode("lookup");
+      lookupBarcode(candidate.value);
+    }
+
     function setActionLink(element, href) {
       element.href = href;
       element.classList.remove("disabled");
       element.setAttribute("aria-disabled", "false");
     }
 
-    function confirmNumber(candidate, score) {
+    function confirmNumber(candidate, score, lookupLocation) {
       var changed = !scanner.confirmed || scanner.confirmed.local !== candidate.local;
       scanner.confirmed = candidate;
       scanner.lastCandidate = candidate;
@@ -1458,6 +1877,7 @@
       setConfidence(Math.max(score, 92));
       voteMetric.textContent = REQUIRED_VOTES + "/" + REQUIRED_VOTES;
       setStatus("Number verified and ready", "success", "fa-solid fa-circle-check");
+      setLocation(lookupLocation || "");
 
       setActionLink(callAction, "tel:" + candidate.local);
       setActionLink(whatsappAction, "https://wa.me/" + candidate.international);
@@ -1483,6 +1903,10 @@
 
       var candidate = reading.candidate;
       var score = reading.engine === "native" ? 92 : reading.confidence;
+      if (candidate.kind === "barcode") {
+        registerBarcodeCandidate(candidate, score);
+        return;
+      }
       if (!candidate.full) {
         updateCandidateDisplay(candidate, score, 0);
         return;
@@ -1513,6 +1937,8 @@
 
     function resetScanner() {
       scanner.votes = [];
+      scanner.barcodeVotes = [];
+      scanner.lastBarcode = "";
       scanner.confirmed = null;
       scanner.lastCandidate = null;
       scanner.lastConfidence = 0;
@@ -1520,6 +1946,9 @@
       result.className = "";
       resultCard.classList.remove("verified");
       target.classList.remove("locking", "verified");
+      setLocation("");
+      barcodeInput.value = "";
+      setLookupMessage("Phone and location only");
       setConfidence(0);
       voteMetric.textContent = "0/" + REQUIRED_VOTES;
       setStatus("Point the number inside the frame", "", "fa-solid fa-crosshairs");
@@ -1551,7 +1980,7 @@
     });
 
     async function scanOnce() {
-      if (!scanner.ready || scanner.busy || document.hidden) return;
+      if (!scanner.ready || scanner.busy || scanner.lookupInFlight || scanner.mode !== "scan" || document.hidden) return;
       var rect = getCropRect();
       if (!rect) return;
 
@@ -1570,14 +1999,20 @@
         setStatus("Hold the camera steady", "warn", "fa-solid fa-hand");
         return;
       }
-      if (frame.blurry) {
-        setStatus("Move closer and let the camera focus", "warn", "fa-solid fa-wand-magic-sparkles");
-        return;
-      }
-
       scanner.busy = true;
       var reading = null;
       try {
+        var barcodeReading = await scanBarcode(getFocusedCropRect(rect));
+        if (barcodeReading) {
+          registerRecognition(barcodeReading);
+          return;
+        }
+
+        if (frame.blurry) {
+          setStatus("Move closer and let the camera focus", "warn", "fa-solid fa-wand-magic-sparkles");
+          return;
+        }
+
         if (scanner.nativeDetector) {
           reading = await scanNative(rect);
           if (reading) scanner.nativeMisses = 0;
