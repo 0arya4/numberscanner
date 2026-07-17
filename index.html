@@ -7,7 +7,6 @@
   <meta name="description" content="Fast on-device Iraqi phone number scanner with AI-assisted OCR." />
   <title>Just a small scanner for my work</title>
   <script src="https://cdn.jsdelivr.net/npm/tesseract.js@7/dist/tesseract.min.js"></script>
-  <script src="https://cdn.jsdelivr.net/npm/@zxing/browser@0.1.5/umd/zxing-browser.min.js"></script>
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@600;700&family=Space+Grotesk:wght@400;500;600;700&display=swap" rel="stylesheet" />
@@ -1031,7 +1030,7 @@
           </button>
         </div>
         <div id="scanHint" class="lookup-panel lookup-hint">
-          <span><i class="fa-solid fa-wand-magic-sparkles" aria-hidden="true"></i>Center one 07 number or Red Pack barcode</span>
+          <span><i class="fa-solid fa-wand-magic-sparkles" aria-hidden="true"></i>Center one 11-digit number starting with 07</span>
         </div>
         <div id="lookupPanel" class="lookup-panel" hidden>
           <form id="lookupForm" class="lookup-form">
@@ -1175,17 +1174,12 @@
       digitModelFailed: false,
       lastDigitAttempt: 0,
       nativeDetector: null,
-      barcodeDetector: null,
-      zxingReader: null,
-      lastBarcodeAttempt: 0,
       nativeMisses: 0,
       hardwareZoom: false,
       zoomed: true,
       torchOn: false,
       previousFrame: null,
       votes: [],
-      barcodeVotes: [],
-      lastBarcode: "",
       lookupInFlight: false,
       mode: "scan",
       confirmed: null,
@@ -1256,7 +1250,7 @@
         setStatus("Enter a barcode or ID to search", "", "fa-solid fa-barcode");
         setTimeout(function () { barcodeInput.focus(); }, 100);
       } else {
-        setStatus("Scan phone numbers or barcodes", "", "fa-solid fa-crosshairs");
+        setStatus("Scan one 07 phone number", "", "fa-solid fa-crosshairs");
       }
     }
 
@@ -1646,27 +1640,8 @@
       return null;
     }
 
-    function findBarcodeCandidate(text) {
-      var normalized = normalizeDigits(text);
-      var matches = normalized.match(/(?:^|[^\d])(\d{4,12})(?!\d)/g) || [];
-      var best = null;
-
-      for (var i = 0; i < matches.length; i++) {
-        var code = matches[i].replace(/\D/g, "");
-        if (/^07\d{9}$/.test(code) || /^9647\d{9}$/.test(code)) continue;
-        if (!best || Math.abs(code.length - 6) < Math.abs(best.value.length - 6)) {
-          best = { value: code, kind: "barcode", full: true };
-        }
-      }
-      return best;
-    }
-
-    function findScannerCandidate(text) {
-      return findPhoneCandidate(text) || findBarcodeCandidate(text);
-    }
-
     function candidateLength(candidate) {
-      return candidate.kind === "barcode" ? candidate.value.length : candidate.local.length;
+      return candidate.local.length;
     }
 
     function chooseBetter(first, second) {
@@ -1674,8 +1649,6 @@
       if (!second) return first;
       if (second.candidate.full && !first.candidate.full) return second;
       if (first.candidate.full && !second.candidate.full) return first;
-      if (second.candidate.kind === "barcode" && first.candidate.kind !== "barcode") return second;
-      if (first.candidate.kind === "barcode" && second.candidate.kind !== "barcode") return first;
       if (candidateLength(second.candidate) > candidateLength(first.candidate)) return second;
       return second.confidence > first.confidence ? second : first;
     }
@@ -1752,29 +1725,7 @@
       }
     }
 
-    async function initializeBarcodeDetector() {
-      if ("BarcodeDetector" in window) {
-        try {
-          var supported = await BarcodeDetector.getSupportedFormats();
-          var preferred = ["code_128", "code_39", "codabar", "itf", "ean_13", "ean_8"];
-          var formats = preferred.filter(function (format) {
-            return supported.indexOf(format) >= 0;
-          });
-          scanner.barcodeDetector = formats.length
-            ? new BarcodeDetector({ formats: formats })
-            : new BarcodeDetector();
-        } catch (error) {
-          scanner.barcodeDetector = null;
-        }
-      }
-
-      if (window.ZXingBrowser && window.ZXingBrowser.BrowserMultiFormatReader) {
-        scanner.zxingReader = new ZXingBrowser.BrowserMultiFormatReader();
-      }
-    }
-
     async function initializeEngine() {
-      await initializeBarcodeDetector();
       if ("TextDetector" in window) {
         try {
           scanner.nativeDetector = new TextDetector();
@@ -1814,34 +1765,6 @@
       }
 
       return best ? { candidate: best, confidence: 92, engine: "native" } : null;
-    }
-
-    async function scanBarcode(rect) {
-      if (!scanner.barcodeDetector && !scanner.zxingReader) return null;
-      var now = performance.now();
-      if (now - scanner.lastBarcodeAttempt < 250) return null;
-      scanner.lastBarcodeAttempt = now;
-      var width = clamp(Math.round(150 * (rect.w / rect.h)), 520, 940);
-      nativeCanvas.width = width;
-      nativeCanvas.height = 150;
-      nativeCtx.drawImage(video, rect.x, rect.y, rect.w, rect.h, 0, 0, width, 150);
-
-      if (scanner.barcodeDetector) {
-        var detections = await scanner.barcodeDetector.detect(nativeCanvas);
-        for (var i = 0; i < detections.length; i++) {
-          var nativeCandidate = findBarcodeCandidate(detections[i].rawValue || "");
-          if (nativeCandidate) return { candidate: nativeCandidate, confidence: 98, engine: "barcode" };
-        }
-      }
-
-      if (scanner.zxingReader) {
-        try {
-          var result = await scanner.zxingReader.decodeFromCanvas(nativeCanvas);
-          var zxingCandidate = findBarcodeCandidate(result.getText ? result.getText() : "");
-          if (zxingCandidate) return { candidate: zxingCandidate, confidence: 96, engine: "barcode" };
-        } catch (error) {}
-      }
-      return null;
     }
 
     async function recognizeTesseract(rect) {
@@ -2000,39 +1923,6 @@
       }
     }
 
-    function registerBarcodeCandidate(candidate, score) {
-      var now = Date.now();
-      scanner.barcodeVotes = scanner.barcodeVotes.filter(function (vote) {
-        return now - vote.time <= VOTE_WINDOW_MS;
-      });
-      scanner.barcodeVotes.push({ code: candidate.value, confidence: score, time: now });
-
-      var matching = scanner.barcodeVotes.filter(function (vote) {
-        return vote.code === candidate.value;
-      });
-      var votes = Math.min(matching.length, REQUIRED_VOTES);
-      var average = matching.reduce(function (sum, vote) {
-        return sum + vote.confidence;
-      }, 0) / matching.length;
-
-      if (votes < REQUIRED_VOTES) {
-        result.textContent = "ID " + candidate.value;
-        result.className = "candidate";
-        resultCard.classList.remove("verified");
-        target.classList.remove("verified");
-        target.classList.add("locking");
-        setConfidence(average);
-        voteMetric.textContent = votes + "/" + REQUIRED_VOTES;
-        setStatus("Barcode verification " + votes + "/" + REQUIRED_VOTES, "warn", "fa-solid fa-barcode");
-        return;
-      }
-
-      if (scanner.lastBarcode === candidate.value && scanner.lookupInFlight) return;
-      scanner.lastBarcode = candidate.value;
-      selectMode("lookup");
-      lookupBarcode(candidate.value);
-    }
-
     function setActionLink(element, href) {
       element.href = href;
       element.classList.remove("disabled");
@@ -2079,10 +1969,6 @@
 
       var candidate = reading.candidate;
       var score = reading.engine === "native" ? 92 : reading.confidence;
-      if (candidate.kind === "barcode") {
-        registerBarcodeCandidate(candidate, score);
-        return;
-      }
       if (!candidate.full) {
         updateCandidateDisplay(candidate, score, 0);
         return;
@@ -2113,8 +1999,6 @@
 
     function resetScanner() {
       scanner.votes = [];
-      scanner.barcodeVotes = [];
-      scanner.lastBarcode = "";
       scanner.confirmed = null;
       scanner.lastCandidate = null;
       scanner.lastConfidence = 0;
@@ -2179,12 +2063,6 @@
       scanner.busy = true;
       var reading = null;
       try {
-        var barcodeReading = await scanBarcode(getFocusedCropRect(rect));
-        if (barcodeReading) {
-          registerRecognition(barcodeReading);
-          return;
-        }
-
         if (frame.blurry) {
           setStatus("Move closer and let the camera focus", "warn", "fa-solid fa-wand-magic-sparkles");
           return;
