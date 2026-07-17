@@ -104,8 +104,6 @@ function callCompanyApi(barcode) {
     const method = (process.env.RPIRAQ_API_METHOD || "GET").toUpperCase();
     const sendsJsonBody = method !== "GET" && method !== "HEAD";
 
-    // The company endpoint accepts GET values as query parameters. Some API
-    // clients let you attach a body to GET, but the upstream service ignores it.
     if (!sendsJsonBody) endpoint.searchParams.set("barcode", barcode);
 
     const headers = {
@@ -212,7 +210,6 @@ async function lookupBarcode(request, response) {
       return;
     }
 
-    // Return only the requested contact and delivery details, never the full record.
     json(response, 200, { barcode, phone, city, location });
   } catch (error) {
     console.error("Lookup failed:", error.message);

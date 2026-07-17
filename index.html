@@ -5,7 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, viewport-fit=cover, user-scalable=no" />
   <meta name="theme-color" content="#180407" />
   <meta name="description" content="Fast on-device Iraqi phone number scanner with AI-assisted OCR." />
-  <title>Iraqi Scanner AI</title>
+  <title>Just a small scanner for my work</title>
   <script src="https://cdn.jsdelivr.net/npm/tesseract.js@7/dist/tesseract.min.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/@zxing/browser@0.1.5/umd/zxing-browser.min.js"></script>
   <link rel="preconnect" href="https://fonts.googleapis.com" />
@@ -1111,7 +1111,6 @@
   <script>
     "use strict";
 
-    // Scanner geometry and performance targets.
     var BOX_WIDTH = 0.90;
     var BOX_HEIGHT = 0.20;
     var CSS_ZOOM = 1.8;
@@ -1453,8 +1452,6 @@
     }
 
     function getScreenNumberRect(rect) {
-      // Laptop tables are usually one clean horizontal text row. A narrower
-      // center strip removes adjacent columns while keeping the number sharp.
       var lineHeight = rect.h * 0.5;
       return {
         x: rect.x + rect.w * 0.025,
@@ -1832,9 +1829,7 @@
           var result = await scanner.zxingReader.decodeFromCanvas(nativeCanvas);
           var zxingCandidate = findBarcodeCandidate(result.getText ? result.getText() : "");
           if (zxingCandidate) return { candidate: zxingCandidate, confidence: 96, engine: "barcode" };
-        } catch (error) {
-          // NotFoundException is the normal result for a frame without a barcode.
-        }
+        } catch (error) {}
       }
       return null;
     }
@@ -1889,8 +1884,6 @@
       scanner.lastDigitAttempt = now;
 
       var started = performance.now();
-      // Keep the recognizer focused on the printed-number zone and preserve
-      // real pixels; the model is never asked to invent missing detail.
       var numberRect = getScreenNumberRect(rect);
       prepareOcrCanvas(numberRect, "soft", 360);
       var output = await scanner.digitModel.recognize(ocrCanvas, {

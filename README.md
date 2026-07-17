@@ -1,4 +1,4 @@
-# Iraqi Scanner AI
+# Just a small scanner for my work
 
 Camera scanner for Iraqi phone numbers and short ID barcodes, with a manual ID lookup panel.
 
