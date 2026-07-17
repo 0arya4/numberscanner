@@ -196,7 +196,15 @@ async function lookupBarcode(request, response) {
       "address",
       "area",
       "district",
+      "order.info.additional_location",
+      "order.info.address.name",
       "customer.location"
+    ]);
+    const city = configuredValue(record, "RPIRAQ_CITY_FIELD", [
+      "city",
+      "order.city",
+      "order.info.city",
+      "order.info.address.city.name"
     ]);
 
     if (!phone) {
@@ -204,8 +212,8 @@ async function lookupBarcode(request, response) {
       return;
     }
 
-    // Data minimization: city and all other upstream fields stay on the server.
-    json(response, 200, { barcode, phone, location });
+    // Return only the requested contact and delivery details, never the full record.
+    json(response, 200, { barcode, phone, city, location });
   } catch (error) {
     console.error("Lookup failed:", error.message);
     json(response, 502, { error: "Lookup service is unavailable. Please try again." });

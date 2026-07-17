@@ -590,6 +590,51 @@
       color: var(--green);
     }
 
+    .lookup-details {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 7px;
+      margin-top: 7px;
+      animation: detailReveal .25s ease both;
+    }
+
+    .lookup-details[hidden] {
+      display: none;
+    }
+
+    @keyframes detailReveal {
+      from { opacity: 0; transform: translateY(-4px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+
+    .lookup-detail {
+      min-width: 0;
+      padding: 6px 8px;
+      border: 1px solid rgba(var(--green-rgb), .2);
+      border-radius: 9px;
+      background: rgba(var(--green-rgb), .06);
+    }
+
+    .lookup-detail-label {
+      display: block;
+      color: #8190af;
+      font-size: .46rem;
+      font-weight: 800;
+      letter-spacing: .09em;
+      text-transform: uppercase;
+    }
+
+    .lookup-detail-value {
+      display: block;
+      margin-top: 2px;
+      color: #e6f1ff;
+      font-size: .62rem;
+      font-weight: 700;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+
     .panel {
       flex: 0 0 auto;
       padding: 14px 14px calc(14px + env(safe-area-inset-bottom));
@@ -992,6 +1037,16 @@
             <button id="lookupSubmit" class="lookup-submit" type="submit">Search</button>
           </form>
           <p id="lookupMessage" class="lookup-message">Phone and location only</p>
+          <div id="lookupDetails" class="lookup-details" hidden aria-live="polite">
+            <div class="lookup-detail">
+              <span class="lookup-detail-label">City</span>
+              <span id="cityValue" class="lookup-detail-value">—</span>
+            </div>
+            <div class="lookup-detail">
+              <span class="lookup-detail-label">Location</span>
+              <span id="lookupLocationValue" class="lookup-detail-value">—</span>
+            </div>
+          </div>
         </div>
       </section>
 
@@ -1076,6 +1131,9 @@
     var barcodeInput = document.getElementById("barcodeInput");
     var lookupSubmit = document.getElementById("lookupSubmit");
     var lookupMessage = document.getElementById("lookupMessage");
+    var lookupDetails = document.getElementById("lookupDetails");
+    var cityValue = document.getElementById("cityValue");
+    var lookupLocationValue = document.getElementById("lookupLocationValue");
     var engineBadge = document.getElementById("engineBadge");
     var engineLabel = document.getElementById("engineLabel");
     var zoomBtn = document.getElementById("zoomBtn");
@@ -1158,6 +1216,13 @@
     function setLookupMessage(message, tone) {
       lookupMessage.textContent = message;
       lookupMessage.className = "lookup-message" + (tone ? " " + tone : "");
+    }
+
+    function setLookupDetails(city, location) {
+      var hasDetails = Boolean(city || location);
+      cityValue.textContent = city || "Not available";
+      lookupLocationValue.textContent = location || "Not available";
+      lookupDetails.hidden = !hasDetails;
     }
 
     function setLocation(value) {
@@ -1797,6 +1862,7 @@
       lookupSubmit.disabled = true;
       barcodeInput.value = barcode;
       setLookupMessage("Searching secure company records…");
+      setLookupDetails("", "");
       setStatus("Looking up ID " + barcode + "…", "", "fa-solid fa-shield-halved");
 
       try {
@@ -1813,7 +1879,8 @@
 
         confirmNumber(candidate, 100, payload.location || "");
         setLookupMessage("ID " + barcode + " found", "success");
-        showToast("Phone and location retrieved");
+        setLookupDetails(payload.city || "", payload.location || "");
+        showToast("Phone and delivery details retrieved");
       } catch (error) {
         console.error(error);
         setLookupMessage(error.message || "Lookup failed", "error");
@@ -1949,6 +2016,7 @@
       setLocation("");
       barcodeInput.value = "";
       setLookupMessage("Phone and location only");
+      setLookupDetails("", "");
       setConfidence(0);
       voteMetric.textContent = "0/" + REQUIRED_VOTES;
       setStatus("Point the number inside the frame", "", "fa-solid fa-crosshairs");
