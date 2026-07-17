@@ -359,10 +359,10 @@
     }
 
     @keyframes scanBeam {
-      0% { top: 8px; opacity: 0; }
+      0% { transform: translate3d(0, 0, 0); opacity: 0; }
       10% { opacity: .9; }
       88% { opacity: .9; }
-      100% { top: calc(100% - 10px); opacity: 0; }
+      100% { transform: translate3d(0, calc(var(--target-h) - 20px), 0); opacity: 0; }
     }
 
     .target.locking {
@@ -675,10 +675,10 @@
     }
 
     .result-card.verified {
-      border-color: rgba(var(--green-rgb), .26);
+      border: 2px solid var(--green);
       background:
-        linear-gradient(135deg, rgba(var(--green-rgb), .09), transparent 46%),
-        rgba(255, 255, 255, .025);
+        linear-gradient(135deg, rgba(var(--green-rgb), .2), rgba(var(--green-rgb), .07) 55%, rgba(255, 255, 255, .025));
+      box-shadow: inset 0 0 22px rgba(var(--green-rgb), .08), 0 0 24px rgba(var(--green-rgb), .12);
     }
 
     .result-card.verified::after {
@@ -703,21 +703,6 @@
       font-weight: 700;
       letter-spacing: .13em;
       text-transform: uppercase;
-    }
-
-    .eyebrow .verified-label {
-      display: none;
-      color: var(--green);
-    }
-
-    .result-card.verified .eyebrow .scanning-label {
-      display: none;
-    }
-
-    .result-card.verified .eyebrow .verified-label {
-      display: inline-flex;
-      align-items: center;
-      gap: 5px;
     }
 
     #result {
@@ -968,6 +953,22 @@
       }
     }
 
+    @media (max-width: 760px) {
+      .ambient::before,
+      .ambient::after {
+        animation: none;
+        filter: blur(56px);
+      }
+
+      .topbar,
+      .zoom-btn,
+      .camera-status,
+      .lookup-dock,
+      .panel {
+        backdrop-filter: none;
+      }
+    }
+
     @media (prefers-reduced-motion: reduce) {
       *,
       *::before,
@@ -1062,7 +1063,6 @@
         <div class="result-copy">
           <div class="eyebrow">
             <span class="scanning-label"><i class="fa-solid fa-wave-square" aria-hidden="true"></i> Live recognition</span>
-            <span class="verified-label"><i class="fa-solid fa-shield-halved" aria-hidden="true"></i> AI verified</span>
           </div>
           <div id="result">07•• ••• ••••</div>
           <div id="location"></div>
@@ -1115,10 +1115,11 @@
     var CSS_ZOOM = 1.8;
     var OCR_HEIGHT = 136;
     var REQUIRED_VOTES = 2;
+    var FAST_CONFIRM_CONFIDENCE = 90;
     var VOTE_WINDOW_MS = 4200;
     var MIN_TESS_CONFIDENCE = 42;
     var DIGIT_MODEL_URL = "https://cdn.jsdelivr.net/npm/ppu-paddle-ocr@6.1.0/web/+esm";
-    var DIGIT_MODEL_INTERVAL_MS = 560;
+    var DIGIT_MODEL_INTERVAL_MS = 420;
 
     var video = document.getElementById("video");
     var cameraShell = document.getElementById("cameraShell");
@@ -1173,6 +1174,7 @@
       digitModelPromise: null,
       digitModelFailed: false,
       lastDigitAttempt: 0,
+      digitMisses: 0,
       nativeDetector: null,
       nativeMisses: 0,
       hardwareZoom: false,
@@ -1372,9 +1374,9 @@
         stream = await navigator.mediaDevices.getUserMedia({
           video: {
             facingMode: { ideal: "environment" },
-            width: { ideal: 3840 },
-            height: { ideal: 2160 },
-            frameRate: { ideal: 30, max: 30 }
+            width: { ideal: 1920 },
+            height: { ideal: 1080 },
+            frameRate: { ideal: 24, max: 30 }
           },
           audio: false
         });
@@ -1508,8 +1510,8 @@
         quality: quality,
         dark: mean < 30,
         bright: mean > 242,
-        blurry: sharpness < 4.2,
-        moving: motion > 0 && movement > 29
+        blurry: sharpness < 3.2,
+        moving: motion > 0 && movement > 42
       };
     }
 
@@ -1544,7 +1546,7 @@
       ocrCanvas.width = width;
       ocrCanvas.height = canvasHeight;
       ocrCtx.imageSmoothingEnabled = true;
-      ocrCtx.imageSmoothingQuality = "high";
+      ocrCtx.imageSmoothingQuality = "medium";
       ocrCtx.filter = variant === "soft" ? "grayscale(1) contrast(1.7)" : "grayscale(1)";
       ocrCtx.drawImage(video, rect.x, rect.y, rect.w, rect.h, 0, 0, width, canvasHeight);
       ocrCtx.filter = "none";
@@ -1831,16 +1833,20 @@
 
       var started = performance.now();
       var numberRect = getScreenNumberRect(rect);
-      prepareOcrCanvas(numberRect, "soft", 360);
+      prepareOcrCanvas(numberRect, "soft", 256);
       var output = await scanner.digitModel.recognize(ocrCanvas, {
         flatten: true,
         noCache: true,
         strategy: "per-line"
       });
       var best = digitModelReading(output);
+      if (best) scanner.digitMisses = 0;
+      else scanner.digitMisses++;
 
-      if (!best || !best.candidate.full) {
-        prepareOcrCanvas(getScreenRescueRect(rect), "binary", 420);
+      var shouldRescue = best && !best.candidate.full;
+      if (!best && scanner.digitMisses % 3 === 0) shouldRescue = true;
+      if (shouldRescue) {
+        prepareOcrCanvas(getScreenRescueRect(rect), "binary", 300);
         var rescueOutput = await scanner.digitModel.recognize(ocrCanvas, {
           flatten: true,
           noCache: true,
@@ -1909,7 +1915,7 @@
         var candidate = lookupPhoneCandidate(payload.phone || "");
         if (!candidate) throw new Error("Lookup returned an invalid phone number");
 
-        confirmNumber(candidate, 100, payload.location || "");
+        confirmNumber(candidate, 100, payload.location || "", "API");
         setLookupMessage("ID " + barcode + " found", "success");
         setLookupDetails(payload.city || "", payload.location || "");
         showToast("Phone and delivery details retrieved");
@@ -1929,7 +1935,7 @@
       element.setAttribute("aria-disabled", "false");
     }
 
-    function confirmNumber(candidate, score, lookupLocation) {
+    function confirmNumber(candidate, score, lookupLocation, confirmationLabel) {
       var changed = !scanner.confirmed || scanner.confirmed.local !== candidate.local;
       scanner.confirmed = candidate;
       scanner.lastCandidate = candidate;
@@ -1941,8 +1947,8 @@
       target.classList.remove("locking");
       target.classList.add("verified");
       setConfidence(Math.max(score, 92));
-      voteMetric.textContent = REQUIRED_VOTES + "/" + REQUIRED_VOTES;
-      setStatus("Number verified and ready", "success", "fa-solid fa-circle-check");
+      voteMetric.textContent = confirmationLabel || REQUIRED_VOTES + "/" + REQUIRED_VOTES;
+      setStatus("Ready", "success", "fa-solid fa-circle-check");
       setLocation(lookupLocation || "");
 
       setActionLink(callAction, "tel:" + candidate.local);
@@ -1953,7 +1959,6 @@
 
       if (changed) {
         if (navigator.vibrate) navigator.vibrate([45, 35, 90]);
-        showToast("Verified " + candidate.local);
       }
     }
 
@@ -1979,6 +1984,11 @@
         return;
       }
 
+      if ((reading.engine === "digit-ai" || reading.engine === "native") && score >= FAST_CONFIRM_CONFIDENCE) {
+        confirmNumber(candidate, score, "", "FAST");
+        return;
+      }
+
       var now = Date.now();
       scanner.votes = scanner.votes.filter(function (vote) {
         return now - vote.time <= VOTE_WINDOW_MS;
@@ -1999,6 +2009,8 @@
 
     function resetScanner() {
       scanner.votes = [];
+      scanner.digitMisses = 0;
+      scanner.lastDigitAttempt = 0;
       scanner.confirmed = null;
       scanner.lastCandidate = null;
       scanner.lastConfidence = 0;
@@ -2041,7 +2053,7 @@
     });
 
     async function scanOnce() {
-      if (!scanner.ready || scanner.busy || scanner.lookupInFlight || scanner.mode !== "scan" || document.hidden) return;
+      if (!scanner.ready || scanner.busy || scanner.lookupInFlight || scanner.mode !== "scan" || scanner.confirmed || document.hidden) return;
       var rect = getCropRect();
       if (!rect) return;
 
