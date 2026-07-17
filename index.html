@@ -1461,6 +1461,16 @@
       };
     }
 
+    function getScreenRescueRect(rect) {
+      var lineHeight = rect.h * 0.68;
+      return {
+        x: rect.x,
+        y: rect.y + (rect.h - lineHeight) / 2,
+        w: rect.w,
+        h: lineHeight
+      };
+    }
+
     function inspectFrame(rect) {
       var sampleWidth = 144;
       var sampleHeight = 32;
@@ -1877,6 +1887,19 @@
       return best;
     }
 
+    function digitModelReading(output) {
+      var candidate = findPhoneCandidate(output.text || "");
+      if (!candidate) return null;
+
+      var score = Number(output.confidence) || 0;
+      if (score <= 1) score *= 100;
+      return {
+        candidate: candidate,
+        confidence: clamp(Math.round(score), 0, 99),
+        engine: "digit-ai"
+      };
+    }
+
     async function recognizeDigitModel(rect) {
       if (!scanner.digitModel) return null;
       var now = performance.now();
@@ -1891,17 +1914,20 @@
         noCache: true,
         strategy: "per-line"
       });
-      var candidate = findPhoneCandidate(output.text || "");
-      latencyMetric.textContent = Math.round(performance.now() - started) + "ms";
-      if (!candidate) return null;
+      var best = digitModelReading(output);
 
-      var score = Number(output.confidence) || 0;
-      if (score <= 1) score *= 100;
-      return {
-        candidate: candidate,
-        confidence: clamp(Math.round(score), 0, 99),
-        engine: "digit-ai"
-      };
+      if (!best || !best.candidate.full) {
+        prepareOcrCanvas(getScreenRescueRect(rect), "binary", 420);
+        var rescueOutput = await scanner.digitModel.recognize(ocrCanvas, {
+          flatten: true,
+          noCache: true,
+          strategy: "per-line"
+        });
+        best = chooseBetter(best, digitModelReading(rescueOutput));
+      }
+
+      latencyMetric.textContent = Math.round(performance.now() - started) + "ms";
+      return best;
     }
 
     function updateCandidateDisplay(candidate, score, votes) {
@@ -1915,8 +1941,11 @@
       target.classList.add("locking");
       setConfidence(score);
       voteMetric.textContent = votes + "/" + REQUIRED_VOTES;
+      var partialMessage = candidate.local && candidate.local.startsWith("07")
+        ? candidate.local.length + "/11 digits — move slightly back"
+        : "Center the full 07 number";
       setStatus(
-        candidate.full ? "AI verification " + votes + "/" + REQUIRED_VOTES + " — hold steady" : "Reading remaining digits…",
+        candidate.full ? "AI verification " + votes + "/" + REQUIRED_VOTES + " — hold steady" : partialMessage,
         "warn",
         "fa-solid fa-fingerprint"
       );
