@@ -102,12 +102,20 @@ function callCompanyApi(barcode) {
     const useHttps = endpoint.protocol === "https:";
     const sendRequest = useHttps ? httpsRequest : httpRequest;
     const method = (process.env.RPIRAQ_API_METHOD || "GET").toUpperCase();
+    const sendsJsonBody = method !== "GET" && method !== "HEAD";
+
+    // The company endpoint accepts GET values as query parameters. Some API
+    // clients let you attach a body to GET, but the upstream service ignores it.
+    if (!sendsJsonBody) endpoint.searchParams.set("barcode", barcode);
+
     const headers = {
       Accept: "application/json",
-      "Content-Type": "application/json",
-      "api-access-key": process.env.RPIRAQ_API_ACCESS_KEY,
-      "Content-Length": Buffer.byteLength(payload)
+      "api-access-key": process.env.RPIRAQ_API_ACCESS_KEY
     };
+    if (sendsJsonBody) {
+      headers["Content-Type"] = "application/json";
+      headers["Content-Length"] = Buffer.byteLength(payload);
+    }
 
     const upstreamRequest = sendRequest(
       {
@@ -143,8 +151,7 @@ function callCompanyApi(barcode) {
       upstreamRequest.destroy(new Error("Company API timed out"));
     });
     upstreamRequest.on("error", rejectCall);
-    // Node's HTTP client supports the supplied GET-with-JSON-body contract.
-    upstreamRequest.write(payload);
+    if (sendsJsonBody) upstreamRequest.write(payload);
     upstreamRequest.end();
   });
 }
