@@ -2,6 +2,12 @@
 
 Camera scanner for Iraqi phone numbers and short ID barcodes, with a manual ID lookup panel.
 
+## Digit AI scanner
+
+The live scanner now requests the highest camera resolution available, crops the number zone, and uses a lightweight PaddleOCR digit model in the browser. It confirms the same value in two frames before an ID lookup. The model downloads and caches on the first use; Tesseract remains only as a fallback if the digit model cannot load.
+
+For the highest accuracy on tiny Red Pack numbers, supply a future training set of real sticker photos so the recognition model can be fine-tuned to the exact digits, print, blur, and lighting used in the field.
+
 ## Safe local setup
 
 1. Copy `.env.example` to `.env`.

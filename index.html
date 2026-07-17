@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, viewport-fit=cover, user-scalable=no" />
-  <meta name="theme-color" content="#050711" />
+  <meta name="theme-color" content="#180407" />
   <meta name="description" content="Fast on-device Iraqi phone number scanner with AI-assisted OCR." />
   <title>Iraqi Scanner AI</title>
   <script src="https://cdn.jsdelivr.net/npm/tesseract.js@7/dist/tesseract.min.js"></script>
@@ -15,20 +15,20 @@
   <style>
     :root {
       color-scheme: dark;
-      --bg: #050711;
-      --panel: rgba(10, 14, 29, .86);
-      --panel-solid: #0a0e1d;
+      --bg: #180407;
+      --panel: rgba(29, 7, 11, .88);
+      --panel-solid: #1d070b;
       --line: rgba(255, 255, 255, .09);
       --muted: #77819a;
       --text: #f6f8ff;
-      --cyan: #52e7ff;
-      --cyan-rgb: 82, 231, 255;
-      --violet: #9a7cff;
-      --violet-rgb: 154, 124, 255;
-      --green: #50f5a4;
-      --green-rgb: 80, 245, 164;
-      --amber: #ffca68;
-      --danger: #ff718b;
+      --cyan: #ff5368;
+      --cyan-rgb: 255, 83, 104;
+      --violet: #d92b49;
+      --violet-rgb: 217, 43, 73;
+      --green: #ff6678;
+      --green-rgb: 255, 102, 120;
+      --amber: #ffb26c;
+      --danger: #ff415f;
       --target-x: 5%;
       --target-y: 40%;
       --target-w: 90%;
@@ -77,7 +77,7 @@
       background:
         radial-gradient(circle at 15% 8%, rgba(var(--violet-rgb), .12), transparent 31%),
         radial-gradient(circle at 90% 38%, rgba(var(--cyan-rgb), .08), transparent 29%),
-        linear-gradient(145deg, #050711 0%, #070914 50%, #04060e 100%);
+        linear-gradient(145deg, #180407 0%, #25070c 50%, #0d0204 100%);
     }
 
     .ambient::before,
@@ -116,7 +116,7 @@
       flex-direction: column;
       position: relative;
       z-index: 1;
-      background: rgba(4, 6, 14, .58);
+      background: rgba(18, 3, 6, .62);
       box-shadow: 0 0 70px rgba(0, 0, 0, .55);
     }
 
@@ -128,7 +128,7 @@
       justify-content: space-between;
       gap: 12px;
       border-bottom: 1px solid var(--line);
-      background: rgba(5, 7, 17, .8);
+      background: rgba(20, 4, 8, .84);
       backdrop-filter: blur(18px);
       z-index: 10;
     }
@@ -1119,6 +1119,8 @@
     var REQUIRED_VOTES = 2;
     var VOTE_WINDOW_MS = 4200;
     var MIN_TESS_CONFIDENCE = 42;
+    var DIGIT_MODEL_URL = "https://cdn.jsdelivr.net/npm/ppu-paddle-ocr@6.1.0/web/+esm";
+    var DIGIT_MODEL_INTERVAL_MS = 560;
 
     var video = document.getElementById("video");
     var cameraShell = document.getElementById("cameraShell");
@@ -1169,6 +1171,10 @@
       track: null,
       worker: null,
       workerPromise: null,
+      digitModel: null,
+      digitModelPromise: null,
+      digitModelFailed: false,
+      lastDigitAttempt: 0,
       nativeDetector: null,
       barcodeDetector: null,
       zxingReader: null,
@@ -1373,8 +1379,8 @@
         stream = await navigator.mediaDevices.getUserMedia({
           video: {
             facingMode: { ideal: "environment" },
-            width: { ideal: 1920 },
-            height: { ideal: 1080 },
+            width: { ideal: 3840 },
+            height: { ideal: 2160 },
             frameRate: { ideal: 30, max: 30 }
           },
           audio: false
@@ -1655,6 +1661,47 @@
       return second.confidence > first.confidence ? second : first;
     }
 
+    async function ensureDigitModel() {
+      if (scanner.digitModel) return scanner.digitModel;
+      if (scanner.digitModelPromise) return scanner.digitModelPromise;
+
+      scanner.digitModelPromise = (async function () {
+        var paddle = await import(DIGIT_MODEL_URL);
+        var providers = await paddle.getDefaultWebExecutionProviders();
+        var service = new paddle.PaddleOcrService({
+          model: paddle.V6_TINY_MODEL,
+          detection: {
+            maxSideLength: 960,
+            minimumAreaThreshold: 18,
+            paddingVertical: .12,
+            paddingHorizontal: .12
+          },
+          recognition: { strategy: "per-line" },
+          session: {
+            executionProviders: providers,
+            graphOptimizationLevel: "all",
+            executionMode: "sequential"
+          },
+          debugging: { verbose: false, debug: false }
+        });
+        await service.initialize();
+        scanner.digitModel = service;
+        scanner.digitModelFailed = false;
+        engineLabel.textContent = "DIGIT AI READY";
+        engineBadge.classList.add("ready");
+        return service;
+      })();
+
+      try {
+        return await scanner.digitModelPromise;
+      } catch (error) {
+        scanner.digitModelPromise = null;
+        scanner.digitModelFailed = true;
+        console.info("Digit AI model was unavailable; using the OCR backup.", error);
+        throw error;
+      }
+    }
+
     async function ensureTesseract() {
       if (scanner.worker) return scanner.worker;
       if (scanner.workerPromise) return scanner.workerPromise;
@@ -1669,7 +1716,7 @@
           }
         });
         await worker.setParameters({
-          tessedit_char_whitelist: "0123456789+ -().",
+          tessedit_char_whitelist: "0123456789",
           tessedit_pageseg_mode: "7",
           preserve_interword_spaces: "1",
           user_defined_dpi: "300"
@@ -1717,24 +1764,19 @@
         }
       }
 
-      if (scanner.nativeDetector) {
-        engineLabel.textContent = "HYBRID AI";
-        engineBadge.classList.add("ready");
-        scanner.ready = true;
-        setStatus("Point the number inside the frame", "", "fa-solid fa-crosshairs");
-        ensureTesseract().catch(function (error) {
-          console.info("Tesseract fallback was not initialized.", error);
-        });
-        return;
-      }
-
-      engineLabel.textContent = "LOADING OCR";
-      setStatus("Loading digit model…", "", "fa-solid fa-atom");
-      await ensureTesseract();
-      engineLabel.textContent = "OCR v7 READY";
-      engineBadge.classList.add("ready");
+      engineLabel.textContent = "LOADING DIGIT AI";
+      setStatus("Loading digit-only AI…", "", "fa-solid fa-atom");
       scanner.ready = true;
-      setStatus("Point the number inside the frame", "", "fa-solid fa-crosshairs");
+      ensureDigitModel().then(function () {
+        setStatus("Point the number inside the frame", "", "fa-solid fa-crosshairs");
+      }).catch(function () {
+        engineLabel.textContent = "OCR BACKUP READY";
+        return ensureTesseract().then(function () {
+          setStatus("Digit AI unavailable — OCR backup active", "warn", "fa-solid fa-triangle-exclamation");
+        }).catch(function (error) {
+          console.info("OCR backup was not initialized.", error);
+        });
+      });
     }
 
     async function scanNative(rect) {
@@ -1824,6 +1866,34 @@
 
       latencyMetric.textContent = Math.round(performance.now() - started) + "ms";
       return best;
+    }
+
+    async function recognizeDigitModel(rect) {
+      if (!scanner.digitModel) return null;
+      var now = performance.now();
+      if (now - scanner.lastDigitAttempt < DIGIT_MODEL_INTERVAL_MS) return null;
+      scanner.lastDigitAttempt = now;
+
+      var started = performance.now();
+      // Keep the recognizer focused on the printed-number zone and preserve
+      // real pixels; the model is never asked to invent missing detail.
+      prepareOcrCanvas(rect, "soft", 300);
+      var output = await scanner.digitModel.recognize(ocrCanvas, {
+        flatten: true,
+        noCache: true,
+        strategy: "per-line"
+      });
+      var candidate = findScannerCandidate(output.text || "");
+      latencyMetric.textContent = Math.round(performance.now() - started) + "ms";
+      if (!candidate) return null;
+
+      var score = Number(output.confidence) || 0;
+      if (score <= 1) score *= 100;
+      return {
+        candidate: candidate,
+        confidence: clamp(Math.round(score), 0, 99),
+        engine: "digit-ai"
+      };
     }
 
     function updateCandidateDisplay(candidate, score, votes) {
@@ -2088,10 +2158,13 @@
           if (reading) scanner.nativeMisses = 0;
           else scanner.nativeMisses++;
 
-          if (!reading && scanner.worker && scanner.nativeMisses % 4 === 0) {
+          if (!reading) reading = await recognizeDigitModel(rect);
+          if (!reading && scanner.digitModelFailed && scanner.worker && scanner.nativeMisses % 4 === 0) {
             reading = await recognizeTesseract(rect);
           }
-        } else {
+        } else if (scanner.digitModel) {
+          reading = await recognizeDigitModel(rect);
+        } else if (scanner.digitModelFailed) {
           reading = await recognizeTesseract(rect);
         }
         registerRecognition(reading);
